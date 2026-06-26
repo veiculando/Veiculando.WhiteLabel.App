@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  /* Aurum Colors */
+  --primary-color: #8a0009;
+  --primary-dark: #4a0005;
+  --primary-light: #c2302c;
+  --header-footer-bg: #5e0f1a;
+  
+  --gold-accent: #d9b442;
+  --gold-grad: linear-gradient(135deg, #d9b442, #e5c96b);
+
+  --paper-bg: #F9F7F2;
+  --white: #ffffff;
+  --charcoal: #1A1A1B;
+  --on-surface: #544341;
+
+  /* Typography */
+  --font-display: 'Fraunces', serif;
+  --font-ui: 'Inter', sans-serif;
+
+  /* Shapes & Shadows */
+  --radius-sm: 8px;
+  --radius-md: 18px;
+  --radius-pill: 999px;
+
+  --shadow-base: 0 4px 12px rgba(74, 14, 14, 0.08);
+  --shadow-hover: 0 8px 24px rgba(74, 14, 14, 0.15);
+
+  /* Layout */
+  --container-max-width: 1280px;
+  --spacing-base: 8px;
+  --padding-section: 48px;
+}

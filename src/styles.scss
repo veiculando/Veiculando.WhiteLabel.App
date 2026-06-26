@@ -1,0 +1,31 @@
+@import 'styles/tokens';
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--paper-bg);
+  color: var(--charcoal);
+  font-family: var(--font-ui);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--primary-dark);
+}
+
+.btn-pill {
+  border-radius: var(--radius-pill);
+  background-color: var(--primary-color);
+  color: var(--white);
+  padding: 12px 24px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: var(--shadow-base);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-pill:hover {
+  background-color: var(--primary-light);
+  box-shadow: var(--shadow-hover);
+}
