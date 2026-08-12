@@ -1,22 +1,15 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { SecureStorage } from '../core/auth/secure-storage';
-import { environment } from '../../environments/environment';
+import { BrandingService } from './core/branding/branding.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [CommonModule, RouterOutlet],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  title = 'Veiculando.WhiteLabel.App';
-
-  testToken() {
-    console.log('Testing Secure Storage...');
-    SecureStorage.setToken(environment.tokenKey, 'fake-jwt-token-123');
-    const retrieved = SecureStorage.getToken(environment.tokenKey);
-    console.log('Retrieved Token:', retrieved);
-  }
+  readonly brand = inject(BrandingService).branding;
 }
