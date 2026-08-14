@@ -1,49 +1,7 @@
 # Linha de base da divida npm pre-existente.
 #
-# Medida em 2026-08-14 com npm 10.8.2 sobre o package-lock.json.
-# Mesma versao npm usada pelo CI em Node 20.
-# Escopo bloqueante: advisories High e Critical (39 IDs).
-# Responsavel: Bruno Bogochvol
-# Prazo: antes do primeiro deploy de producao (Gate C).
+# Medida em 2026-08-14 sobre o package-lock.json final de Angular 22.
+# Escopo bloqueante: advisories High e Critical (0 IDs).
 #
 # Este arquivo nao reduz severidade. O gate falha se npm audit retornar
-# qualquer advisory High/Critical que nao esteja listado abaixo.
-GHSA-23HP-3JRH-7FPW
-GHSA-28WG-GHJ8-5HJV
-GHSA-2M8V-J782-FHVR
-GHSA-2V37-7H3G-55P8
-GHSA-34X7-HFP2-RC4V
-GHSA-39PV-4J6C-2G6V
-GHSA-3JXR-9VMJ-R5CP
-GHSA-48R7-HPM6-GFXM
-GHSA-52CP-R559-CP3M
-GHSA-52V5-JR5W-GJXR
-GHSA-58C5-G7WP-6W37
-GHSA-5C6J-R48X-RMVQ
-GHSA-5P2G-FCMC-QVQQ
-GHSA-5P4M-2WFM-XMQJ
-GHSA-6G55-P6WH-862Q
-GHSA-83G3-92JG-28CX
-GHSA-8QQ5-RM4J-MR97
-GHSA-8X88-C5MF-7J5W
-GHSA-9PPJ-QMQM-Q256
-GHSA-C2C7-RCM5-VVQJ
-GHSA-FX2H-PF6J-XCFF
-GHSA-G93W-MFHG-P222
-GHSA-JHPW-976M-542J
-GHSA-JJ27-H5HQ-8X99
-GHSA-JRMJ-C5CX-3CW6
-GHSA-MH99-V99M-4GVG
-GHSA-MWP4-54F8-5FHR
-GHSA-P3VC-36G9-X9GR
-GHSA-PH9P-34F9-6G65
-GHSA-PRJF-86W9-MFQV
-GHSA-Q6F4-QQRG-JV6X
-GHSA-QFFP-2RHF-9H96
-GHSA-R28C-9Q8G-F849
-GHSA-R6Q2-HW4H-H46W
-GHSA-RGJC-H3X7-9MWG
-GHSA-RGW5-RVV9-X895
-GHSA-V4HV-RGFQ-GP49
-GHSA-W3RX-R6R6-PGPR
-GHSA-X9G3-XRWR-CWFG
+# qualquer advisory High/Critical, pois nao ha excecoes listadas abaixo.
