@@ -16,7 +16,8 @@ jobs:
   angular:
     uses: veiculando/.github/.github/workflows/_angular-ci.yml@main
     with:
-      node-version: '20'
+      node-version: '22.22.3'
+      test-runner: vitest
 
   security:
     uses: veiculando/.github/.github/workflows/_security-ci.yml@main
