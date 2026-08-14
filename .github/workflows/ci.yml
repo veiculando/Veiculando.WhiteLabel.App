@@ -22,5 +22,6 @@ jobs:
   security:
     uses: veiculando/.github/.github/workflows/_security-ci.yml@main
     with:
-      dependency-review: true
-      fail-on-severity: high
+      # Repositorio privado no GitHub Free: dependency-review-action exige
+      # licenca paga. Vulnerabilidades continuam cobertas pelo npm audit.
+      dependency-review: false
