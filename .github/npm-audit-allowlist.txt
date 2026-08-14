@@ -1,0 +1,63 @@
+# Linha de base da divida npm pre-existente.
+#
+# Medida em 2026-08-13 com npm 10.8.2 / Node 20.20.2:
+# https://github.com/veiculando/Veiculando.WhiteLabel.App/actions/runs/31724984548
+# Escopo bloqueante: advisories High e Critical (53 IDs).
+# Responsavel: Bruno Bogochvol
+# Prazo: antes do primeiro deploy de producao (Gate C).
+#
+# Este arquivo nao reduz severidade. O gate falha se npm audit retornar
+# qualquer advisory High/Critical que nao esteja listado abaixo.
+GHSA-22jq-vg5j-6vgg
+GHSA-23hp-3jrh-7fpw
+GHSA-28wg-ghj8-5hjv
+GHSA-2m8v-j782-fhvr
+GHSA-2v37-7h3g-55p8
+GHSA-34x7-hfp2-rc4v
+GHSA-39pv-4j6c-2g6v
+GHSA-3jxr-9vmj-r5cp
+GHSA-3v7f-55p6-f55p
+GHSA-48r7-hpm6-gfxm
+GHSA-4x5r-pxfx-6jf8
+GHSA-4xrf-jv44-h6hh
+GHSA-52cp-r559-cp3m
+GHSA-52f5-9888-hmc6
+GHSA-58c5-g7wp-6w37
+GHSA-58w9-8g37-x9v5
+GHSA-5c6j-r48x-rmvq
+GHSA-5p2g-fcmc-qvqq
+GHSA-5p4m-2wfm-xmqj
+GHSA-692r-grfm-v8x7
+GHSA-6g55-p6wh-862q
+GHSA-83g3-92jg-28cx
+GHSA-8qq5-rm4j-mr97
+GHSA-8x88-c5mf-7j5w
+GHSA-9ppj-qmqm-q256
+GHSA-c2c7-rcm5-vvqj
+GHSA-f3m7-gqxr-g87x
+GHSA-fxqj-rqcc-2cmp
+GHSA-g93w-mfhg-p222
+GHSA-gvwx-54wh-qm9j
+GHSA-h67p-54hq-rp68
+GHSA-jhpw-976m-542j
+GHSA-jj27-h5hq-8x99
+GHSA-jrmj-c5cx-3cw6
+GHSA-mh99-v99m-4gvg
+GHSA-mwp4-54f8-5fhr
+GHSA-p3vc-36g9-x9gr
+GHSA-ph9p-34f9-6g65
+GHSA-prjf-86w9-mfqv
+GHSA-q6f4-qqrg-jv6x
+GHSA-qffp-2rhf-9h96
+GHSA-qj8w-gfj5-8c6v
+GHSA-qx2v-qp2m-jg93
+GHSA-r28c-9q8g-f849
+GHSA-r292-9mhp-454m
+GHSA-r6q2-hw4h-h46w
+GHSA-rgjc-h3x7-9mwg
+GHSA-rgw5-rvv9-x895
+GHSA-v4hv-rgfq-gp49
+GHSA-vmf3-w455-68vh
+GHSA-w3rx-r6r6-pgpr
+GHSA-w8wr-v893-vjvp
+GHSA-x9g3-xrwr-cwfg
