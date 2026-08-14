@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { SecureStorage } from '../core/auth/secure-storage';
-import { environment } from '../../environments/environment';
+import { SecureStorage } from './core/auth/secure-storage';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',

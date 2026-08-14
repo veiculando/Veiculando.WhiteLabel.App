@@ -24,6 +24,6 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, Veiculando.WhiteLabel.App');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Veiculando WhiteLabel (App - Anunciante)');
   });
 });
