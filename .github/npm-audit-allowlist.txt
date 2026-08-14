@@ -1,63 +1,49 @@
 # Linha de base da divida npm pre-existente.
 #
-# Medida em 2026-08-13 com npm 10.8.2 / Node 20.20.2:
-# https://github.com/veiculando/Veiculando.WhiteLabel.App/actions/runs/31724984548
-# Escopo bloqueante: advisories High e Critical (53 IDs).
+# Medida em 2026-08-14 com npm 10.8.2 sobre o package-lock.json.
+# Mesma versao npm usada pelo CI em Node 20.
+# Escopo bloqueante: advisories High e Critical (39 IDs).
 # Responsavel: Bruno Bogochvol
 # Prazo: antes do primeiro deploy de producao (Gate C).
 #
 # Este arquivo nao reduz severidade. O gate falha se npm audit retornar
 # qualquer advisory High/Critical que nao esteja listado abaixo.
-GHSA-22jq-vg5j-6vgg
-GHSA-23hp-3jrh-7fpw
-GHSA-28wg-ghj8-5hjv
-GHSA-2m8v-j782-fhvr
-GHSA-2v37-7h3g-55p8
-GHSA-34x7-hfp2-rc4v
-GHSA-39pv-4j6c-2g6v
-GHSA-3jxr-9vmj-r5cp
-GHSA-3v7f-55p6-f55p
-GHSA-48r7-hpm6-gfxm
-GHSA-4x5r-pxfx-6jf8
-GHSA-4xrf-jv44-h6hh
-GHSA-52cp-r559-cp3m
-GHSA-52f5-9888-hmc6
-GHSA-58c5-g7wp-6w37
-GHSA-58w9-8g37-x9v5
-GHSA-5c6j-r48x-rmvq
-GHSA-5p2g-fcmc-qvqq
-GHSA-5p4m-2wfm-xmqj
-GHSA-692r-grfm-v8x7
-GHSA-6g55-p6wh-862q
-GHSA-83g3-92jg-28cx
-GHSA-8qq5-rm4j-mr97
-GHSA-8x88-c5mf-7j5w
-GHSA-9ppj-qmqm-q256
-GHSA-c2c7-rcm5-vvqj
-GHSA-f3m7-gqxr-g87x
-GHSA-fxqj-rqcc-2cmp
-GHSA-g93w-mfhg-p222
-GHSA-gvwx-54wh-qm9j
-GHSA-h67p-54hq-rp68
-GHSA-jhpw-976m-542j
-GHSA-jj27-h5hq-8x99
-GHSA-jrmj-c5cx-3cw6
-GHSA-mh99-v99m-4gvg
-GHSA-mwp4-54f8-5fhr
-GHSA-p3vc-36g9-x9gr
-GHSA-ph9p-34f9-6g65
-GHSA-prjf-86w9-mfqv
-GHSA-q6f4-qqrg-jv6x
-GHSA-qffp-2rhf-9h96
-GHSA-qj8w-gfj5-8c6v
-GHSA-qx2v-qp2m-jg93
-GHSA-r28c-9q8g-f849
-GHSA-r292-9mhp-454m
-GHSA-r6q2-hw4h-h46w
-GHSA-rgjc-h3x7-9mwg
-GHSA-rgw5-rvv9-x895
-GHSA-v4hv-rgfq-gp49
-GHSA-vmf3-w455-68vh
-GHSA-w3rx-r6r6-pgpr
-GHSA-w8wr-v893-vjvp
-GHSA-x9g3-xrwr-cwfg
+GHSA-23HP-3JRH-7FPW
+GHSA-28WG-GHJ8-5HJV
+GHSA-2M8V-J782-FHVR
+GHSA-2V37-7H3G-55P8
+GHSA-34X7-HFP2-RC4V
+GHSA-39PV-4J6C-2G6V
+GHSA-3JXR-9VMJ-R5CP
+GHSA-48R7-HPM6-GFXM
+GHSA-52CP-R559-CP3M
+GHSA-52V5-JR5W-GJXR
+GHSA-58C5-G7WP-6W37
+GHSA-5C6J-R48X-RMVQ
+GHSA-5P2G-FCMC-QVQQ
+GHSA-5P4M-2WFM-XMQJ
+GHSA-6G55-P6WH-862Q
+GHSA-83G3-92JG-28CX
+GHSA-8QQ5-RM4J-MR97
+GHSA-8X88-C5MF-7J5W
+GHSA-9PPJ-QMQM-Q256
+GHSA-C2C7-RCM5-VVQJ
+GHSA-FX2H-PF6J-XCFF
+GHSA-G93W-MFHG-P222
+GHSA-JHPW-976M-542J
+GHSA-JJ27-H5HQ-8X99
+GHSA-JRMJ-C5CX-3CW6
+GHSA-MH99-V99M-4GVG
+GHSA-MWP4-54F8-5FHR
+GHSA-P3VC-36G9-X9GR
+GHSA-PH9P-34F9-6G65
+GHSA-PRJF-86W9-MFQV
+GHSA-Q6F4-QQRG-JV6X
+GHSA-QFFP-2RHF-9H96
+GHSA-R28C-9Q8G-F849
+GHSA-R6Q2-HW4H-H46W
+GHSA-RGJC-H3X7-9MWG
+GHSA-RGW5-RVV9-X895
+GHSA-V4HV-RGFQ-GP49
+GHSA-W3RX-R6R6-PGPR
+GHSA-X9G3-XRWR-CWFG
