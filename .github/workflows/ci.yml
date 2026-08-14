@@ -1,0 +1,25 @@
+name: CI
+
+# Chamador dos workflows reutilizaveis mantidos em veiculando/.github.
+#
+# Este repositorio e autocontido: nao depende do core, entao nao precisa de
+# secret nem de checkout adicional.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 'sprint-*'
+
+jobs:
+  angular:
+    uses: veiculando/.github/.github/workflows/_angular-ci.yml@main
+    with:
+      node-version: '20'
+
+  security:
+    uses: veiculando/.github/.github/workflows/_security-ci.yml@main
+    with:
+      dependency-review: true
+      fail-on-severity: high
