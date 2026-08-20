@@ -1,7 +1,12 @@
-<div class="container" style="max-width: var(--container-max-width); margin: 0 auto; padding: var(--padding-section);">
-  <h1>Veiculando WhiteLabel (App - Anunciante)</h1>
-  <p>Design System Aurum (CSR - Angular v17+ Standalone)</p>
-  <button class="btn-pill" (click)="testToken()">Testar Secure Storage (Smoke Test)</button>
+@if (brand(); as branding) {
+  <div class="container" style="max-width: var(--container-max-width); margin: 0 auto; padding: var(--padding-section);">
+    <header>
+      <img [src]="branding.logoUrl" [alt]="'Logo ' + branding.nomeExibicao" height="48" />
+      <h1>{{ branding.nomeExibicao }}</h1>
+    </header>
 
-  <router-outlet></router-outlet>
-</div>
+    <router-outlet></router-outlet>
+
+    <footer>{{ branding.footerText || branding.nomeExibicao }}</footer>
+  </div>
+}
