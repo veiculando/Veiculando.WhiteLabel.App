@@ -1,0 +1,35 @@
+name: Docker
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - Dockerfile
+      - nginx.conf
+      - .dockerignore
+      - .trivyignore
+      - package.json
+      - package-lock.json
+      - angular.json
+      - 'src/**'
+      - '.github/workflows/docker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  image:
+    if: github.ref == 'refs/heads/master'
+    uses: veiculando/.github/.github/workflows/_docker-build-push.yml@main
+    with:
+      image-name: veiculando-whitelabel-app
+      source-dir: Veiculando.WhiteLabel.App
+      dockerfile: Dockerfile
+      acr-login-server: ${{ vars.ACR_LOGIN_SERVER }}
+    secrets:
+      azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
