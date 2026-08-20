@@ -1,0 +1,10 @@
+.git
+.github
+.angular
+.vscode
+coverage
+dist
+node_modules
+npm-debug.log*
+.env*
+!/.env.example
