@@ -8,7 +8,7 @@ RUN npm ci --ignore-scripts
 COPY . .
 RUN npm run build -- --configuration production
 
-FROM nginx:stable-alpine AS final
+FROM nginxinc/nginx-unprivileged:stable-alpine AS final
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/veiculando.white-label.app/browser/ /usr/share/nginx/html/
 
