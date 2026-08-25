@@ -1,12 +1,21 @@
 @if (brand(); as branding) {
-  <div class="container" style="max-width: var(--container-max-width); margin: 0 auto; padding: var(--padding-section);">
-    <header>
-      <img [src]="branding.logoUrl" [alt]="'Logo ' + branding.nomeExibicao" height="48" />
+  <main class="portal">
+    <section class="portal__card">
+      <div class="portal__marca">
+        <img [src]="branding.logoUrl" [alt]="'Logo ' + branding.nomeExibicao" />
+        <span>Portal WhiteLabel</span>
+      </div>
+
+      <div class="portal__linha"></div>
+      <p class="portal__sobretitulo">Identidade conectada ao seu domínio</p>
       <h1>{{ branding.nomeExibicao }}</h1>
-    </header>
+      <p class="portal__descricao">
+        A experiência do anunciante será apresentada aqui com a identidade da sua operação.
+      </p>
 
-    <router-outlet></router-outlet>
+      <router-outlet></router-outlet>
 
-    <footer>{{ branding.footerText || branding.nomeExibicao }}</footer>
-  </div>
+      <footer>{{ branding.footerText || branding.nomeExibicao }}</footer>
+    </section>
+  </main>
 }

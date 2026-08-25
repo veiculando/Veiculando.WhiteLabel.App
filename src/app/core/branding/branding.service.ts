@@ -83,8 +83,8 @@ export class BrandingService {
     root.setProperty('--primary-color', branding.primaryColor);
     root.setProperty('--secondary-color', branding.secondaryColor);
     root.setProperty('--accent-color', branding.accentColor);
-    root.setProperty('--primary-dark', branding.secondaryColor);
-    root.setProperty('--gold-accent', branding.accentColor);
+    root.setProperty('--primary-light', branding.accentColor);
+    root.setProperty('--gold-accent', branding.secondaryColor);
 
     this.title.setTitle(branding.seoTitle ?? branding.nomeExibicao);
     if (branding.seoDescription) {
@@ -102,7 +102,7 @@ export class BrandingService {
       '--primary-color',
       '--secondary-color',
       '--accent-color',
-      '--primary-dark',
+      '--primary-light',
       '--gold-accent',
     ].forEach((property) => root.removeProperty(property));
 

@@ -1,16 +1,35 @@
 @import 'styles/tokens';
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper-bg);
+}
+
 body {
   margin: 0;
   padding: 0;
   background-color: var(--paper-bg);
   color: var(--charcoal);
   font-family: var(--font-ui);
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   color: var(--primary-dark);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--secondary-color) 70%, #ffffff);
+  outline-offset: 2px;
 }
 
 .btn-pill {

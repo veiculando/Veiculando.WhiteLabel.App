@@ -47,6 +47,8 @@ describe('BrandingService', () => {
     expect(service.branding()?.nomeExibicao).toBe('Marca B');
     expect(document.documentElement.style.getPropertyValue('--primary-color')).toBe('#112233');
     expect(document.documentElement.style.getPropertyValue('--secondary-color')).toBe('#334455');
+    expect(document.documentElement.style.getPropertyValue('--primary-light')).toBe('#ffcc00');
+    expect(document.documentElement.style.getPropertyValue('--gold-accent')).toBe('#334455');
     expect(title.getTitle()).toBe('Portal Marca B');
   });
 
