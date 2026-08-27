@@ -25,7 +25,42 @@ describe('BrandingService', () => {
     title = TestBed.inject(Title);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    document.querySelectorAll('link[rel~="icon"]').forEach(link => link.remove());
+  });
+
+  it('mantem um favicon distinto da logo, removendo icones residuais', async () => {
+    for (let i = 0; i < 2; i++) {
+      const link = document.createElement('link');
+      link.rel = 'icon';
+      link.href = '/marca-anterior.ico';
+      document.head.appendChild(link);
+    }
+    const load = service.load();
+    http.expectOne('/api/wl/config/branding').flush({
+      nomeExibicao: 'Aurum', logoUrl: '/logo.png',
+      faviconUrl: 'https://assets.example.com/favicon-v2.png', primaryColor: '#A80009',
+    });
+    await load;
+    const icons = document.querySelectorAll('link[rel~="icon"]');
+    expect(icons.length).toBe(1);
+    expect(icons[0].getAttribute('href')).toBe('https://assets.example.com/favicon-v2.png');
+    expect(service.branding()?.logoUrl).toBe('/logo.png');
+  });
+
+  it('favicon invalido ou indisponivel usa fallback neutro, nunca a logo', async () => {
+    for (const faviconUrl of ['javascript:alert(1)', 'https://assets.example.com/ausente.png']) {
+      const load = service.load();
+      http.expectOne('/api/wl/config/branding').flush({
+        nomeExibicao: 'Marca', logoUrl: '/logo.png', faviconUrl, primaryColor: '#112233',
+      });
+      await load;
+      const icon = document.querySelector('link[rel~="icon"]')!;
+      if (faviconUrl.startsWith('https:')) icon.dispatchEvent(new Event('error'));
+      expect(icon.getAttribute('href')).toBe('/favicon-neutral.svg');
+    }
+  });
 
   it('carrega branding same-origin e aplica identidade em runtime', async () => {
     const carregamento = service.load();
