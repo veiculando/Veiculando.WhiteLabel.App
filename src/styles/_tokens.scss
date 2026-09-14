@@ -1,31 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Aurum Colors */
-  --primary-color: #8a0009;
-  --primary-dark: #4a0005;
-  --primary-light: #c2302c;
-  --header-footer-bg: #5e0f1a;
-  
-  --gold-accent: #d9b442;
-  --gold-grad: linear-gradient(135deg, #d9b442, #e5c96b);
+  /* Branding por tenant. Somente estes tres valores mudam em runtime. */
+  --primary-color: #a80009;
+  --secondary-color: #d9b442;
+  --accent-color: #c2302c;
 
-  --paper-bg: #F9F7F2;
+  /* Variantes derivadas: nao fazem parte do contrato WhiteLabel. */
+  --primary-dark: color-mix(in srgb, var(--primary-color) 66%, #000000);
+  --primary-light: var(--accent-color);
+  --header-footer-bg: color-mix(in srgb, var(--primary-color) 74%, #1a1a1b);
+  --gold-accent: var(--secondary-color);
+  --gold-light: color-mix(in srgb, var(--secondary-color) 58%, #ffffff);
+  --gold-grad: linear-gradient(135deg, var(--secondary-color), var(--gold-light));
+
+  /* Design system fixo e compartilhado por todas as exibidoras. */
+  --paper-bg: #f9f7f2;
   --white: #ffffff;
-  --charcoal: #1A1A1B;
-  --on-surface: #544341;
+  --charcoal: #1a1a1b;
+  --on-surface: #5a4341;
+  --divider: #ede7da;
+  --border: #d8cbb9;
+  --surface-muted: #f4f0e8;
+  --danger: #a80009;
+  --danger-bg: #fbeaea;
+  --danger-border: #e8b9b9;
+  --success: #24633b;
+  --success-bg: #eaf4ed;
+  --success-border: #b9d8c2;
+  --warning: #765500;
+  --warning-bg: #fff4d6;
+  --warning-border: #e8cf8d;
 
   /* Typography */
   --font-display: 'Fraunces', serif;
   --font-ui: 'Inter', sans-serif;
 
   /* Shapes & Shadows */
-  --radius-sm: 8px;
-  --radius-md: 18px;
+  --radius-sm: 6px;
+  --radius-md: 14px;
   --radius-pill: 999px;
 
-  --shadow-base: 0 4px 12px rgba(74, 14, 14, 0.08);
-  --shadow-hover: 0 8px 24px rgba(74, 14, 14, 0.15);
+  --shadow-base: 0 12px 34px rgba(74, 0, 5, 0.08);
+  --shadow-hover: 0 18px 42px rgba(74, 0, 5, 0.14);
 
   /* Layout */
   --container-max-width: 1280px;

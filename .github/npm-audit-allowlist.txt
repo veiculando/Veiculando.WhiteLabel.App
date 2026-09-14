@@ -1,0 +1,7 @@
+# Linha de base da divida npm pre-existente.
+#
+# Medida em 2026-08-14 sobre o package-lock.json final de Angular 22.
+# Escopo bloqueante: advisories High e Critical (0 IDs).
+#
+# Este arquivo nao reduz severidade. O gate falha se npm audit retornar
+# qualquer advisory High/Critical, pois nao ha excecoes listadas abaixo.
