@@ -1,8 +1,8 @@
 export const environment = {
-  production: true,
+  production: false,
   bffUrl: '/api/wl',
   tokenKey: 'veiculando-wl.token',
-  usePrototypeFixtures: false,
+  usePrototypeFixtures: true,
   fallbackBranding: {
     nomeExibicao: 'Aurum Mídia OOH',
     logoUrl: '/assets/aurum-mark.svg',
