@@ -26,12 +26,16 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-                "src/favicon.ico",
-                "src/favicon-neutral.svg",
-              "src/assets"
+              "src/favicon.ico",
+              "src/favicon-neutral.svg",
+              "src/assets",
+              "public"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "src/app/features/inventory/inventory.scss",
+              "src/app/features/inventory/inventory-responsive.scss",
+              "src/app/features/checkout/checkout.scss"
             ],
             "scripts": []
           },
@@ -54,7 +58,13 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
             },
             "testing": {
               "aot": false,

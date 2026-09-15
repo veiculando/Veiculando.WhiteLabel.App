@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
@@ -36,6 +36,12 @@ export class BrandingService {
       this.apply(branding);
       this.state.set(branding);
     } catch (error) {
+      if (error instanceof HttpErrorResponse && !environment.production) {
+        const fallback = this.validate(environment.fallbackBranding);
+        this.apply(fallback);
+        this.state.set(fallback);
+        return;
+      }
       this.clearAppliedBranding();
       this.state.set(null);
       throw error;

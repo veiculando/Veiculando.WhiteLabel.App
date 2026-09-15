@@ -37,4 +37,12 @@ describe('jwtInterceptor', () => {
     expect(req.request.headers.has('X-Tenant-AfiliadaId')).toBe(false);
     req.flush({});
   });
+
+  it('não envia credenciais a URLs externas', () => {
+    vi.spyOn(SecureStorage, 'getToken').mockReturnValue('token-cliente');
+    http.get('https://example.org/imagem').subscribe();
+    const req = controller.expectOne('https://example.org/imagem');
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush({});
+  });
 });

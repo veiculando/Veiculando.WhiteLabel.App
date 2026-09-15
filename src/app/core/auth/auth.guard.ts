@@ -11,14 +11,16 @@ export const authGuard: CanActivateFn = (route, state) => {
   const tokenKey = environment.tokenKey; // 'veiculando-wl.token'
   const token = SecureStorage.getToken(tokenKey);
 
-  if (token && !jwtHelper.isTokenExpired(token)) {
-    // Para a Exibidora, verificaríamos permissões aqui.
-    // O App (Anunciante) é mais simples.
-    return true;
+  try {
+    if (token && !jwtHelper.isTokenExpired(token)) {
+      const payload = jwtHelper.decodeToken(token) as Record<string, unknown> | null;
+      if (payload?.['WlPerfil'] === 'Anunciante') return true;
+    }
+  } catch {
+    // Tokens malformed or incompatible with this App never activate routes.
   }
 
   // Se não tem token ou está expirado, limpa e redireciona para login
   SecureStorage.clear(tokenKey);
-  router.navigate(['/login']);
-  return false;
+  return router.createUrlTree(['/login']);
 };

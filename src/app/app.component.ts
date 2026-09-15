@@ -1,6 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { BrandingService } from './core/branding/branding.service';
 
 @Component({
     selector: 'app-root',
@@ -10,6 +9,4 @@ import { BrandingService } from './core/branding/branding.service';
     styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  readonly brand = inject(BrandingService).branding;
-
 }
