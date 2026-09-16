@@ -9,6 +9,7 @@ COPY . .
 RUN npm run build -- --configuration production
 
 FROM nginxinc/nginx-unprivileged:stable-alpine AS final
+USER root
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/veiculando.white-label.app/browser/ /usr/share/nginx/html/
 COPY --chown=nginx:nginx --chmod=755 docker-entrypoint.d/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
