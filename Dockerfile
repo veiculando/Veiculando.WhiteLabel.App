@@ -11,10 +11,13 @@ RUN npm run build -- --configuration production
 FROM nginxinc/nginx-unprivileged:stable-alpine AS final
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/veiculando.white-label.app/browser/ /usr/share/nginx/html/
+COPY --chown=nginx:nginx --chmod=755 docker-entrypoint.d/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
+RUN chown nginx:nginx /usr/share/nginx/html/assets/runtime-config.js
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://127.0.0.1:8080/healthz || exit 1
 
 USER nginx
+ENTRYPOINT ["/docker-entrypoint.d/40-runtime-config.sh"]
 CMD ["nginx", "-g", "daemon off;"]
