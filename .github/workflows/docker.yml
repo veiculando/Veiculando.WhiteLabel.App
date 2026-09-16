@@ -13,6 +13,7 @@ on:
       - angular.json
       - 'src/**'
       - '.github/workflows/docker.yml'
+      - '.github/workflows/preview-auto-deploy.yml'
   workflow_dispatch:
 
 permissions:
