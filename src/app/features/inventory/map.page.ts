@@ -1,11 +1,10 @@
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { InventoryPoint, InventorySearch } from '../../core/api/app-api.models';
-import { CartService } from '../../core/cart/cart.service';
 import { InventoryService } from '../../core/inventory/inventory.service';
-import { environment } from '../../../environments/environment';
+import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.service';
 
 @Component({
   imports: [CurrencyPipe, RouterLink],
@@ -30,8 +29,8 @@ import { environment } from '../../../environments/environment';
         @else {
           <div class="result-list">
             @for (point of points(); track point.id) {
-              <article class="point-card" [class.is-selected]="selectedId() === point.id" (mouseenter)="selectedId.set(point.id)" (mouseleave)="selectedId.set(null)">
-                <button type="button" class="point-card__select" (click)="selectedId.set(point.id)" [attr.aria-label]="'Selecionar ' + point.name"><span class="point-card__icon">{{ point.mediaType === 'Digital OOH' ? '▦' : '▣' }}</span></button>
+              <article class="point-card" [class.is-selected]="selectedId() === point.id" (mouseenter)="select(point.id)" (mouseleave)="selectedId.set(null)">
+                <button type="button" class="point-card__select" (click)="select(point.id)" [attr.aria-label]="'Selecionar ' + point.name"><span class="point-card__icon">{{ point.mediaType === 'Digital OOH' ? '▦' : '▣' }}</span></button>
                 <div class="point-card__body"><div class="point-card__title"><h2>{{ point.name }}</h2><span [class.unavailable]="!point.available">{{ point.available ? 'Disponível' : 'Indisponível' }}</span></div><p>{{ point.address }}</p><div class="point-card__meta"><span>{{ point.mediaType }}</span><span>{{ point.format }}</span></div><div class="point-card__bottom"><strong>{{ point.price | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</strong><a [routerLink]="['/pecas', point.code]">Ver peça</a></div></div>
               </article>
             }
@@ -40,37 +39,82 @@ import { environment } from '../../../environments/environment';
       </aside>
       <section class="map-panel" aria-label="Visualização do inventário">
         <button class="mobile-map-search" type="button" (click)="sheetExpanded.set(true)" aria-controls="inventory-results" [attr.aria-expanded]="sheetExpanded()"><strong>{{query()||'São Paulo · Buscar peças'}}</strong><span>{{points().length}} pontos encontrados · abrir filtros</span></button>
-        @if (prototype) { <div class="map-prototype-note">Prévia de navegação · mapa geográfico ainda não conectado</div> }
-        <div class="map-grid" aria-hidden="true"><span class="avenue avenue--one"></span><span class="avenue avenue--two"></span><span class="avenue avenue--three"></span><span class="park"></span><span class="river"></span><span class="district district--one">Jardins</span><span class="district district--two">Pinheiros</span><span class="district district--three">Moema</span></div>
-        @for (point of points(); track point.id) {
-          <button class="map-pin" [class.is-selected]="selectedId()===point.id" [class.is-unavailable]="!point.available" [style.left.%]="pinX(point)" [style.top.%]="pinY(point)" (click)="selectedId.set(point.id)" [attr.aria-pressed]="selectedId()===point.id" [attr.aria-label]="point.name + ', ' + (point.price | currency:'BRL':'symbol':'1.0-0':'pt-BR')">{{ $index + 1 }}</button>
-        }
+        <div #mapCanvas class="google-map" [class.is-unavailable]="mapError()" aria-label="Mapa Google com as peças encontradas"></div>
+        @if (mapLoading()) { <div class="map-state" role="status">Carregando mapa…</div> }
+        @if (mapError()) { <div class="map-state map-state--error" role="alert"><strong>Mapa indisponível</strong><span>{{ mapError() }}</span></div> }
         @if (selected(); as point) { <div class="map-selection"><strong>{{ point.name }}</strong><span>{{ point.address }}</span><a [routerLink]="['/pecas', point.code]">Ver detalhes da peça</a></div> }
-        <div class="map-attribution">Visualização ilustrativa da cidade · coordenadas das peças preservadas no adapter</div>
       </section>
     </div>
   `,
 })
-export class MapPage {
+export class MapPage implements AfterViewInit {
+  @ViewChild('mapCanvas') private mapCanvas?: ElementRef<HTMLElement>;
   private readonly inventory = inject(InventoryService);
-  readonly cart = inject(CartService);
-  readonly prototype = environment.usePrototypeFixtures;
+  private readonly mapsLoader = inject(GoogleMapsLoaderService);
+  private maps: any;
+  private map: any;
+  private markers: any[] = [];
+  private viewReady = false;
   readonly points = signal<InventoryPoint[]>([]);
   readonly sheetExpanded = signal(false);
   readonly selectedId = signal<number | null>(null);
   readonly selected = computed(() => this.points().find((point) => point.id === this.selectedId()) ?? null);
   readonly query = signal(''); readonly mediaType = signal(''); readonly loading = signal(false); readonly error = signal('');
+  readonly mapLoading = signal(false); readonly mapError = signal('');
   constructor() { this.load(); }
+  ngAfterViewInit() { this.viewReady = true; void this.renderMap(); }
   search(event: Event) { event.preventDefault(); this.load(); }
   changeMedia(value: string) { this.mediaType.set(value); this.load(); }
   load() {
     const filter: InventorySearch = { query: this.query(), mediaType: this.mediaType() };
     this.loading.set(true); this.error.set('');
     this.inventory.search(filter).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (points) => this.points.set(points),
+      next: (points) => { this.points.set(points); void this.renderMap(); },
       error: () => this.error.set('Não foi possível carregar o inventário.'),
     });
   }
-  pinX(point: InventoryPoint) { return Math.max(12, Math.min(88, 50 + (point.longitude + 46.67) * 950)); }
-  pinY(point: InventoryPoint) { return Math.max(15, Math.min(85, 50 + (point.latitude + 23.58) * 1350)); }
+
+  select(id: number) {
+    this.selectedId.set(id);
+    const point = this.points().find((item) => item.id === id);
+    if (point && this.map) {
+      this.map.panTo({ lat: point.latitude, lng: point.longitude });
+      this.map.setZoom(15);
+    }
+  }
+
+  private async renderMap() {
+    if (!this.viewReady || !this.mapCanvas || !this.points().length) return;
+    this.mapLoading.set(true); this.mapError.set('');
+    try {
+      this.maps ??= await this.mapsLoader.load();
+      if (!this.map) {
+        this.map = new this.maps.Map(this.mapCanvas.nativeElement, {
+          center: { lat: -23.5614, lng: -46.6559 }, zoom: 12,
+          mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+          clickableIcons: false, gestureHandling: 'cooperative',
+        });
+      }
+      this.markers.forEach((marker) => marker.setMap(null));
+      this.markers = [];
+      const bounds = new this.maps.LatLngBounds();
+      this.points().forEach((point, index) => {
+        const marker = new this.maps.Marker({
+          map: this.map, position: { lat: point.latitude, lng: point.longitude },
+          label: { text: String(index + 1), color: '#ffffff', fontWeight: '700' },
+          title: point.name,
+          opacity: point.available ? 1 : .55,
+        });
+        marker.addListener('click', () => this.select(point.id));
+        this.markers.push(marker);
+        bounds.extend(marker.getPosition());
+      });
+      if (this.points().length === 1) this.map.setCenter(bounds.getCenter());
+      else this.map.fitBounds(bounds, 76);
+    } catch (error) {
+      this.mapError.set(error instanceof Error ? error.message : 'Não foi possível carregar o Google Maps.');
+    } finally {
+      this.mapLoading.set(false);
+    }
+  }
 }
