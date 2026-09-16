@@ -15,16 +15,17 @@ import { CartService } from '../core/cart/cart.service';
       </a>
       <nav id="mobile-navigation" [class.is-open]="menuOpen()" aria-label="Navegação principal">
         <a routerLink="/mapa" routerLinkActive="is-active" (click)="menuOpen.set(false)">Explorar mapa</a>
-        <a routerLink="/kyc-status" routerLinkActive="is-active" (click)="menuOpen.set(false)">Cadastro e KYC</a>
+        @if (auth.user()) { <a routerLink="/kyc-status" routerLinkActive="is-active" (click)="menuOpen.set(false)">Cadastro e KYC</a> }
         <a href="mailto:suporte@veiculando.com.br">Suporte</a>
-        <button class="mobile-logout" type="button" (click)="auth.logout()">Sair</button>
+        @if (auth.user()) { <button class="mobile-logout" type="button" (click)="auth.logout()">Sair</button> }
       </nav>
       <div class="topbar__actions">
         @if (auth.user(); as user) { <span class="user-name">{{ user.name }}</span> }
         <a class="cart-button" routerLink="/checkout" [attr.aria-label]="'Carrinho com ' + cart.count() + ' itens'">
           <span aria-hidden="true">▱</span> Carrinho <b>{{ cart.count() }}</b>
         </a>
-        <button type="button" class="profile-button" (click)="auth.logout()">Sair</button>
+        @if (auth.user()) { <button type="button" class="profile-button" (click)="auth.logout()">Sair</button> }
+        @else { <a class="profile-button" routerLink="/login">Entrar</a> }
         <button type="button" class="menu-button" aria-label="Abrir navegação" aria-controls="mobile-navigation" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())"><span></span><span></span><span></span></button>
       </div>
     </header>

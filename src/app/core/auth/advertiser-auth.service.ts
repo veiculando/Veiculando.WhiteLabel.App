@@ -87,7 +87,7 @@ export class AdvertiserAuthService {
     SecureStorage.clear(environment.tokenKey);
     this.state.set(null);
     this.isAuthenticated.set(false);
-    void this.router.navigate(['/login']);
+    void this.router.navigate(['/mapa']);
   }
 
   private applySession(session: SessionResponse) {
