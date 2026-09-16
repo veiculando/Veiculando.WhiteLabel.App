@@ -1,0 +1,29 @@
+name: Preview automatic deploy
+
+on:
+  workflow_run:
+    workflows: [Docker]
+    types: [completed]
+
+jobs:
+  deploy:
+    # Só promove um build concluído da master. PRs e dispatches manuais não
+    # alteram o ambiente compartilhado de QA.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'master'
+    uses: veiculando/Veiculando/.github/workflows/preview-auto-deploy.yml@main
+    with:
+      image-name: veiculando-whitelabel-app
+      image-sha: ${{ github.event.workflow_run.head_sha }}
+      compose-service: app
+      image-ref-var: APP_IMAGE
+      smoke-host: ${{ vars.PREVIEW_APP_HOST }}
+      acr-login-server: ${{ vars.ACR_LOGIN_SERVER }}
+      azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+      azure-vm-name: ${{ vars.AZURE_VM_NAME }}
+    secrets:
+      azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
