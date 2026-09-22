@@ -16,6 +16,9 @@ export const routes: Routes = [
       { path: 'onboarding/:tipo', loadComponent: () => import('./features/onboarding/onboarding.page').then(m => m.OnboardingPage) },
       { path: 'kyc-status', loadComponent: () => import('./features/onboarding/kyc-status.page').then(m => m.KycStatusPage) },
       { path: 'convite/:token', loadComponent: () => import('./features/onboarding/invitation.page').then(m => m.InvitationPage) },
+      // VEI-RD-83: o operador da Exibidora abre esta rota em nova aba. O token
+      // chega por postMessage, nunca pela URL.
+      { path: 'prospeccao/entrar', loadComponent: () => import('./features/auth/prospeccao-entrar.page').then(m => m.ProspeccaoEntrarPage) },
     ],
   },
   {
