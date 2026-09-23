@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 
@@ -26,6 +26,7 @@ export class LoginPage {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AdvertiserAuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   readonly loading = signal(false); readonly error = signal('');
   readonly form = this.fb.nonNullable.group({ email: ['', [Validators.required, Validators.email]], password: ['', [Validators.required, Validators.minLength(8)]] });
   submit() {
@@ -33,7 +34,11 @@ export class LoginPage {
     this.loading.set(true); this.error.set('');
     const { email, password } = this.form.getRawValue();
     this.auth.login(email, password).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (session) => void this.router.navigate([session.kycStatus === 'approved' ? '/mapa' : '/kyc-status']),
+      next: (session) => {
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const safeReturnUrl = returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : null;
+        void this.router.navigateByUrl(safeReturnUrl ?? (session.kycStatus === 'approved' ? '/mapa' : '/kyc-status'));
+      },
       error: () => this.error.set('Não foi possível entrar. Confira seus dados e tente novamente.'),
     });
   }

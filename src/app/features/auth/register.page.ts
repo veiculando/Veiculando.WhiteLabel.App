@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -62,7 +63,14 @@ export class RegisterPage {
     this.auth.register({ ...value, email: value.email.trim(), phone, termsVersion: policy.termsVersion, privacyVersion: policy.privacyVersion })
       .pipe(finalize(() => this.loading.set(false))).subscribe({
         next: () => void this.router.navigate(['/confirmar-email'], { queryParams: { email: value.email.trim() } }),
-        error: () => { this.error.set('Não foi possível criar o cadastro. Revise os dados e tente novamente.'); this.policy.set(null); },
+        error: (failure: HttpErrorResponse) => {
+          if (failure.status === 503) {
+            void this.router.navigate(['/confirmar-email'], { queryParams: { email: value.email.trim(), delivery: 'failed' } });
+            return;
+          }
+          this.error.set(typeof failure.error?.message === 'string' ? failure.error.message : 'Não foi possível criar o cadastro. Revise os dados e tente novamente.');
+          this.policy.set(null);
+        },
       });
   }
 }

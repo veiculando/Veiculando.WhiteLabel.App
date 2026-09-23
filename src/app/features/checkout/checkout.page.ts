@@ -15,14 +15,14 @@ import { environment } from '../../../environments/environment';
   @else{<div class="checkout-layout"><section class="checkout-items" aria-label="Itens do carrinho"><div class="section-header"><h2>Peças selecionadas</h2><span>{{cart.count()}} {{cart.count()===1?'peça':'peças'}}</span></div>
   @for(item of cart.items();track item.id){<article class="checkout-item"><div class="item-visual">▣</div><div class="item-main"><a [routerLink]="['/pecas',item.code]">{{item.name}}</a><p>{{item.address}} · {{item.city}}</p><small>{{item.mediaType}} · {{item.format}}</small></div><div class="item-actions"><strong>{{item.price|currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong><button type="button" (click)="remove(item.id)">Remover</button></div></article>}
   <div class="checkout-disclaimer"><strong>Como funciona</strong><p>Esta ação solicita a compra, não efetiva uma reserva automática. A disponibilidade e o valor final serão confirmados antes do envio.</p></div></section>
-  <aside class="order-summary"><h2>Resumo</h2><div class="summary-line"><span>{{cart.count()}} {{cart.count()===1?'peça':'peças'}}</span><strong>{{cart.subtotal()|currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong></div><p>O valor exibido é uma estimativa. No fluxo real, o servidor calcula a cotação final.</p><button class="quote-button" (click)="getQuote()" [disabled]="loading()">{{loading()?'Consultando…':'Conferir valor e disponibilidade'}}</button>
+  <aside class="order-summary"><h2>Resumo</h2><div class="summary-line"><span>{{cart.count()}} {{cart.count()===1?'peça':'peças'}}</span><strong>{{cart.subtotal()|currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong></div><p>O valor exibido é uma estimativa. No fluxo real, o servidor calcula a cotação final.</p>@if(!prototype&&!auth.user()){<p role="status">Você pode revisar o carrinho sem entrar. Para consultar a cotação, faça login.</p>}<button class="quote-button" (click)="getQuote()" [disabled]="loading()">{{loading()?'Consultando…':!prototype&&!auth.user()?'Entrar para consultar':'Conferir valor e disponibilidade'}}</button>
   @if(error()){<p class="error" role="alert">{{error()}}</p>}
   @if(quote();as currentQuote){<div class="quote-result"><span>{{currentQuote.prototype?'Cotação de demonstração':'Cotação confirmada'}}</span><strong>{{currentQuote.total|currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong><small>Válida até {{currentQuote.expiresAt|date:'shortTime'}}</small></div><label class="terms"><input type="checkbox" [checked]="accepted()" (change)="accepted.set($any($event.target).checked)" /><span>Li e aceito os termos de uso, a política de cancelamento e as condições comerciais.</span></label><button class="action" (click)="placeOrder()" [disabled]="!accepted()||loading()||!canSubmit()">{{loading()?'Enviando…':prototype?'Simular pedido':'Fechar pedido'}}</button>@if(!canSubmit()&&!prototype){<p class="blocked">Seu cadastro precisa ser aprovado para fechar o pedido.</p>}}</aside></div>}
   </div>`})
 export class CheckoutPage {
   readonly cart=inject(CartService);
   private readonly checkout=inject(CheckoutService);
-  private readonly auth=inject(AdvertiserAuthService);
+  readonly auth=inject(AdvertiserAuthService);
   private readonly router=inject(Router);
   readonly prototype=environment.usePrototypeFixtures;
   readonly quote=signal<CheckoutQuote|null>(null);
@@ -33,6 +33,12 @@ export class CheckoutPage {
   remove(id:number){this.cart.remove(id);this.quote.set(null);this.accepted.set(false);}
   getQuote(){
     if(this.loading()||!this.cart.count())return;
+    if(!this.prototype&&!this.auth.user()){
+      void this.router.navigate(['/login'],{queryParams:{returnUrl:'/checkout'}});return;
+    }
+    if(!this.prototype&&this.auth.user()?.kycStatus!=='approved'){
+      void this.router.navigate(['/kyc-status']);return;
+    }
     const ids=this.cart.items().map(item=>item.id).join(',');
     this.quote.set(null);this.accepted.set(false);this.loading.set(true);this.error.set('');
     this.checkout.quote(this.cart.items()).pipe(finalize(()=>this.loading.set(false))).subscribe({

@@ -21,7 +21,7 @@ import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.serv
           <label for="inventory-query">Onde você quer anunciar?</label>
           <div class="search-row"><input id="inventory-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Bairro, avenida ou região" /><button type="submit">Buscar</button></div>
         </form>
-        <div class="filter-row"><label for="media-type">Tipo de mídia</label><select id="media-type" [value]="mediaType()" (change)="changeMedia($any($event.target).value)"><option value="">Todos os formatos</option><option value="Outdoor">Outdoor</option><option value="Relógio de rua">Relógio de rua</option><option value="Digital OOH">Digital OOH</option></select></div>
+        <div class="filter-row"><label for="media-type">Tipo de mídia</label><select id="media-type" [value]="mediaType()" (change)="changeMedia($any($event.target).value)"><option value="">Todos os formatos</option>@for (type of mediaTypes(); track type) { <option [value]="type">{{ type }}</option> }</select></div>
         <div class="result-heading"><strong><span class="result-count-desktop">{{ points().length }} peças encontradas</span><span class="result-count-mobile">{{ points().length }} peças próximas</span></strong><button class="sheet-toggle" type="button" [attr.aria-expanded]="sheetExpanded()" aria-controls="inventory-results" (click)="sheetExpanded.set(!sheetExpanded())">{{sheetExpanded()?'Ver mapa':'Mais filtros ⌄'}}</button></div>
         @if (loading()) { <p class="feedback" role="status">Buscando peças disponíveis…</p> }
         @else if (error()) { <div class="feedback error" role="alert">{{ error() }} <button type="button" (click)="load()">Tentar novamente</button></div> }
@@ -56,6 +56,7 @@ export class MapPage implements AfterViewInit {
   private markers: any[] = [];
   private viewReady = false;
   readonly points = signal<InventoryPoint[]>([]);
+  readonly mediaTypes = signal<string[]>([]);
   readonly sheetExpanded = signal(false);
   readonly selectedId = signal<number | null>(null);
   readonly selected = computed(() => this.points().find((point) => point.id === this.selectedId()) ?? null);
@@ -69,7 +70,13 @@ export class MapPage implements AfterViewInit {
     const filter: InventorySearch = { query: this.query(), mediaType: this.mediaType() };
     this.loading.set(true); this.error.set('');
     this.inventory.search(filter).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (points) => { this.points.set(points); void this.renderMap(); },
+      next: (points) => {
+        this.points.set(points);
+        if (!filter.query && !filter.mediaType) {
+          this.mediaTypes.set([...new Set(points.map(point => point.mediaType).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+        }
+        void this.renderMap();
+      },
       error: () => this.error.set('Não foi possível carregar o inventário.'),
     });
   }

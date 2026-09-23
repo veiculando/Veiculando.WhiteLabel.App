@@ -11,6 +11,7 @@ import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
   template: `<section class="onboarding-card">
     <p class="step">Confirmação de e-mail</p><h2>Confirme seu acesso</h2>
     <p>Informe o código de seis dígitos enviado ao seu e-mail. Ele expira em 15 minutos.</p>
+    @if(deliveryFailed){<p role="alert">O envio inicial falhou. Aguarde um minuto e use “Reenviar código”.</p>}
     <form [formGroup]="form" (ngSubmit)="confirm()">
       <label>E-mail<input type="email" formControlName="email" autocomplete="email" /></label>
       <label>Código de confirmação<input formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" /></label>
@@ -27,6 +28,7 @@ export class EmailConfirmationPage {
   private readonly auth = inject(AdvertiserAuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  readonly deliveryFailed = this.route.snapshot.queryParamMap.get('delivery') === 'failed';
   readonly form = inject(FormBuilder).nonNullable.group({
     email: [this.route.snapshot.queryParamMap.get('email') ?? '', [Validators.required, Validators.email]],
     code: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
@@ -35,7 +37,7 @@ export class EmailConfirmationPage {
   readonly resending = signal(false);
   readonly error = signal('');
   readonly message = signal('');
-  readonly cooldown = signal(0);
+  readonly cooldown = signal(this.deliveryFailed ? 60 : 0);
   constructor() { interval(1000).pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(() => this.cooldown.update(v => Math.max(0, v - 1))); }
   confirm() {
     if (this.form.invalid || this.loading()) return;
