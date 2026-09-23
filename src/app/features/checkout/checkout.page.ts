@@ -28,7 +28,13 @@ export class CheckoutPage {
   readonly quote=signal<CheckoutQuote|null>(null);
   readonly loading=signal(false);readonly accepted=signal(false);readonly error=signal('');
   private readonly idempotencyKey=crypto.randomUUID();
-  constructor(){if(!this.prototype&&!this.auth.user()){this.auth.loadMe().subscribe({error:()=>this.auth.logout()});}}
+  constructor(){
+    // O carrinho é público: sem token não há sessão a consultar nem motivo para
+    // redirecionar o visitante. Sessões existentes ainda são revalidadas.
+    if(!this.prototype&&this.auth.isAuthenticated()&&!this.auth.user()){
+      this.auth.loadMe().subscribe({error:()=>this.auth.logout()});
+    }
+  }
   canSubmit(){return this.prototype||this.auth.user()?.kycStatus==='approved';}
   remove(id:number){this.cart.remove(id);this.quote.set(null);this.accepted.set(false);}
   getQuote(){
