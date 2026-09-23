@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { checkoutGuard } from './core/auth/checkout.guard';
 import { AuthLayoutComponent } from './layout/auth-layout.component';
 import { AppShellComponent } from './layout/app-shell.component';
 
@@ -22,12 +21,12 @@ export const routes: Routes = [
     ],
   },
   {
-    // Explorar inventário é uma etapa pública da jornada. A autenticação só
-    // é exigida no checkout, quando há uma intenção de compra.
+    // Explorar, selecionar e revisar o carrinho são públicos. A autenticação
+    // só é exigida quando o usuário pede cotação ou finaliza a compra.
     path: '', component: AppShellComponent, children: [
       { path: 'mapa', loadComponent: () => import('./features/inventory/map.page').then(m => m.MapPage) },
       { path: 'pecas/:codigo', loadComponent: () => import('./features/inventory/piece-detail.page').then(m => m.PieceDetailPage) },
-      { path: 'checkout', canActivate: [checkoutGuard], loadComponent: () => import('./features/checkout/checkout.page').then(m => m.CheckoutPage) },
+      { path: 'checkout', loadComponent: () => import('./features/checkout/checkout.page').then(m => m.CheckoutPage) },
       { path: 'pedidos/sucesso', loadComponent: () => import('./features/checkout/success.page').then(m => m.SuccessPage) },
     ],
   },
