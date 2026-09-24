@@ -9,15 +9,15 @@ import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="auth-card">
-      <div><p class="section-label">Acesso à plataforma</p><h2>Bem-vindo de volta</h2><p class="lead">Entre para continuar seu planejamento de mídia.</p></div>
+      <div><h2>Entrar</h2><p class="lead">Acesse sua conta para gerenciar suas campanhas.</p></div>
       @if (error()) { <p class="alert" role="alert">{{ error() }}</p> }
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <label>E-mail<input type="email" formControlName="email" autocomplete="email" placeholder="voce@empresa.com.br" /></label>
-        <label>Senha<input type="password" formControlName="password" autocomplete="current-password" placeholder="Sua senha" /></label>
-        <a class="forgot" routerLink="/esqueci-senha">Esqueci minha senha</a>
+        <label>E-mail<input type="email" formControlName="email" autocomplete="email" placeholder="seu@email.com.br" /></label>
+        <label>Senha<input type="password" formControlName="password" autocomplete="current-password" placeholder="••••••••" /></label>
+        <a class="forgot" routerLink="/esqueci-senha">Esqueci a senha</a>
         <button class="primary-action" type="submit" [disabled]="form.invalid || loading()">{{ loading() ? 'Entrando…' : 'Entrar' }}</button>
       </form>
-      <p class="switch">Ainda não tem conta? <a routerLink="/cadastre-se">Criar cadastro</a></p>
+      <p class="switch">Ainda não tem conta? <a routerLink="/cadastre-se">Cadastre-se</a></p>
     </div>
   `,
   styleUrls: ['./auth-pages.scss']
