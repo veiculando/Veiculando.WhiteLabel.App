@@ -2,7 +2,7 @@ import { CurrencyPipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { CheckoutQuote, InventoryPoint, OrderConfirmation } from '../../core/api/app-api.models';
+import { CheckoutContext, CheckoutQuote, InventoryPoint, OrderConfirmation } from '../../core/api/app-api.models';
 import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 import { CartService } from '../../core/cart/cart.service';
 import { CheckoutService } from '../../core/checkout/checkout.service';
@@ -19,8 +19,11 @@ import { environment } from '../../../environments/environment';
         @if(!cart.count()){
           <div class="checkout-empty"><h2>Seu carrinho está vazio</h2><p>Explore o mapa e adicione peças para revisar aqui.</p><a routerLink="/mapa">Explorar peças</a></div>
         }@else{
-          <section class="checkout-campaign" aria-label="Campanha"><h2>Campanha</h2><div class="campaign-required">Vínculo de campanha indisponível nesta versão</div><div class="campaign-tabs"><button class="selected" type="button" disabled title="Depende dos serviços de campanhas do BFF">Selecionar existente</button><button type="button" disabled title="Depende dos serviços de campanhas do BFF">Criar nova</button></div><p>@if(auth.user()){O serviço de campanhas ainda não está integrado; a cotação continua disponível.}@else{Você pode revisar o carrinho sem entrar. Faça login para consultar o pedido.}</p></section>
-          <p class="checkout-period">◷ &nbsp; Período e datas serão confirmados na cotação. Não é possível alterá-los no carrinho.</p>
+          <section class="checkout-campaign" aria-label="Campanha"><h2>Campanha</h2>
+            @if(context()?.campaigns?.length){<div class="checkout-campaign__fields"><label>Selecione a campanha<select [value]="campaignId() ?? ''" (change)="selectCampaign($any($event.target).value)"><option value="">Escolha uma campanha</option>@for(campaign of context()!.campaigns;track campaign.id){<option [value]="campaign.id">{{campaign.name}}</option>}</select></label><label>Período<select [value]="periodCode()" (change)="selectPeriod($any($event.target).value)" [disabled]="!campaignId()"><option value="">Escolha um período</option>@for(period of periods();track period.codigo){<option [value]="period.codigo">{{period.nome}}</option>}</select></label></div>}
+            @else{<div class="campaign-required">@if(!auth.user()&&!prototype){Você pode revisar o carrinho sem login. Entre para selecionar uma campanha.}@else{Não há campanha com período futuro disponível para este anunciante.}</div>}
+            <p>A campanha e o período serão revalidados na cotação antes do envio do pedido.</p></section>
+          <p class="checkout-period">◷ &nbsp; @if(selectedPeriod()){Período fixo: {{selectedPeriod()!.nome}}. As datas não podem ser alteradas no carrinho.}@else{Selecione um período para consultar preço e disponibilidade.}</p>
           <div class="checkout-drawer__scroll">
             @for(group of groups();track group.city){
               <section class="city-group"><header><h2>⌖ &nbsp; {{group.city | uppercase}}</h2><p>{{group.items.length}} {{group.items.length===1?'peça':'peças'}} <strong>{{group.subtotal | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong></p></header>
@@ -46,6 +49,11 @@ export class AurumCheckoutPage {
   private readonly router=inject(Router);
   readonly prototype=environment.usePrototypeFixtures;
   readonly quote=signal<CheckoutQuote|null>(null);
+  readonly context=signal<CheckoutContext|null>(null);
+  readonly campaignId=signal<number|null>(null);
+  readonly periodCode=signal('');
+  readonly periods=computed(()=>this.context()?.campaigns.find(c=>c.id===this.campaignId())?.periods??[]);
+  readonly selectedPeriod=computed(()=>this.periods().find(p=>p.codigo===this.periodCode()));
   readonly loading=signal(false);
   readonly accepted=signal(false);
   readonly error=signal('');
@@ -54,17 +62,35 @@ export class AurumCheckoutPage {
     for(const item of this.cart.items()){const city=`${item.city || 'Cidade não informada'} — ${item.state || ''}`;byCity.set(city,[...(byCity.get(city)??[]),item]);}
     return [...byCity].map(([city,items])=>({city,items,subtotal:items.reduce((total,item)=>total+item.price,0)}));
   });
-  private readonly idempotencyKey=crypto.randomUUID();
-  constructor(){if(!this.prototype&&this.auth.isAuthenticated()&&!this.auth.user())this.auth.loadMe().subscribe({error:()=>this.auth.logout()});}
+  private idempotencyKey=crypto.randomUUID();
+  constructor(){
+    if(this.prototype||this.auth.user()?.kycStatus==='approved')this.loadContext();
+    else if(this.auth.isAuthenticated()&&!this.auth.user())this.auth.loadMe().subscribe({next:()=>this.loadContext(),error:()=>this.auth.logout()});
+  }
+  private loadContext(){
+    if(!this.prototype&&this.auth.user()?.kycStatus!=='approved')return;
+    this.checkout.context().subscribe({next:context=>{
+      this.context.set(context);
+      if(context.campaigns.length===1)this.selectCampaign(String(context.campaigns[0].id));
+    },error:()=>this.error.set('Não foi possível carregar as campanhas e os períodos disponíveis.')});
+  }
   canSubmit(){return this.prototype||this.auth.user()?.kycStatus==='approved';}
   remove(id:number){this.cart.remove(id);this.quote.set(null);this.accepted.set(false);}
+  selectCampaign(raw:string){
+    const id=Number(raw);this.campaignId.set(Number.isInteger(id)&&id>0?id:null);
+    const periods=this.periods();this.periodCode.set(periods.length===1?periods[0].codigo:'');
+    this.quote.set(null);this.accepted.set(false);
+  }
+  selectPeriod(code:string){this.periodCode.set(code);this.quote.set(null);this.accepted.set(false);}
   getQuote(){
     if(this.loading()||!this.cart.count())return;
     if(!this.prototype&&!this.auth.user()){void this.router.navigate(['/login'],{queryParams:{returnUrl:'/checkout'}});return;}
     if(!this.prototype&&this.auth.user()?.kycStatus!=='approved'){void this.router.navigate(['/kyc-status']);return;}
+    const campaignId=this.campaignId();const periodCode=this.periodCode();
+    if(!campaignId||!periodCode){this.error.set('Selecione uma campanha e um período para cotar.');return;}
     const ids=this.cart.items().map(item=>item.id).join(',');
     this.quote.set(null);this.accepted.set(false);this.loading.set(true);this.error.set('');
-    this.checkout.quote(this.cart.items()).pipe(finalize(()=>this.loading.set(false))).subscribe({next:quote=>{if(ids===this.cart.items().map(item=>item.id).join(','))this.quote.set(quote);},error:()=>this.error.set('Não foi possível confirmar preço e disponibilidade. Tente novamente.')});
+    this.checkout.quote(this.cart.items(),campaignId,periodCode).pipe(finalize(()=>this.loading.set(false))).subscribe({next:quote=>{if(ids===this.cart.items().map(item=>item.id).join(',')&&campaignId===this.campaignId()&&periodCode===this.periodCode()){this.idempotencyKey=crypto.randomUUID();this.quote.set(quote);}},error:()=>this.error.set('Não foi possível confirmar preço e disponibilidade. Tente novamente.')});
   }
   placeOrder(){
     const quote=this.quote();if(!quote||!this.accepted()||!this.canSubmit()||this.loading()||!this.cart.count())return;

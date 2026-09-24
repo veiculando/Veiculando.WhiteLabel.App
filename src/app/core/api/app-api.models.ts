@@ -38,14 +38,33 @@ export interface InventorySearch {
 
 export interface CheckoutQuote {
   quoteId: string;
-  items: Array<InventoryPoint & { serverPrice: number }>;
+  items: Array<Pick<InventoryPoint, 'id' | 'code'> & { serverPrice: number }>;
   total: number;
   expiresAt: string;
   prototype?: boolean;
 }
 
+export interface CheckoutPeriod {
+  codigo: string;
+  nome: string;
+  dataInicio: string;
+  dataFim: string;
+}
+
+export interface CheckoutCampaign {
+  id: number;
+  code: string;
+  name: string;
+  periods: CheckoutPeriod[];
+}
+
+export interface CheckoutContext {
+  campaigns: CheckoutCampaign[];
+}
+
 export interface OrderConfirmation {
   orderCode: string;
+  orderCodes?: string[];
   total: number;
   createdAt: string;
   prototype?: boolean;
