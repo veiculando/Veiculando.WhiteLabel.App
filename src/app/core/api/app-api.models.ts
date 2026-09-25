@@ -36,6 +36,11 @@ export interface InventorySearch {
   maxPrice?: number;
 }
 
+export interface InventoryFilters {
+  mediaTypes: string[];
+  cities: Array<{ name: string; state: string }>;
+}
+
 export interface CheckoutQuote {
   quoteId: string;
   items: Array<Pick<InventoryPoint, 'id' | 'code'> & { serverPrice: number }>;

@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { InventoryPoint, InventorySearch } from '../api/app-api.models';
+import { InventoryFilters, InventoryPoint, InventorySearch } from '../api/app-api.models';
 
 const PROTOTYPE_POINTS: InventoryPoint[] = [
   { id: 101, code: 'SP-OU-0142', name: 'Paulista · Consolação', address: 'Av. Paulista, 1.421', city: 'São Paulo', state: 'SP', latitude: -23.5614, longitude: -46.6559, mediaType: 'Outdoor', format: '9 x 3 m', price: 8450, available: true, audience: 380000, illuminated: true },
@@ -14,6 +14,16 @@ const PROTOTYPE_POINTS: InventoryPoint[] = [
 @Injectable({ providedIn: 'root' })
 export class InventoryService {
   private readonly http = inject(HttpClient);
+
+  filters(): Observable<InventoryFilters> {
+    if (environment.usePrototypeFixtures) {
+      return of({
+        mediaTypes: [...new Set(PROTOTYPE_POINTS.map(point => point.mediaType))].sort(),
+        cities: [...new Map(PROTOTYPE_POINTS.map(point => [`${point.city}/${point.state}`, { name: point.city, state: point.state }])).values()],
+      });
+    }
+    return this.http.get<InventoryFilters>(`${environment.bffUrl}/app/inventory/filters`);
+  }
 
   search(filter: InventorySearch): Observable<InventoryPoint[]> {
     if (environment.usePrototypeFixtures) {

@@ -1,14 +1,17 @@
 import { CurrencyPipe } from '@angular/common';
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { InventoryPoint } from '../../core/api/app-api.models';
+import { CheckoutCampaign, InventoryPoint } from '../../core/api/app-api.models';
+import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 import { CartService } from '../../core/cart/cart.service';
 import { CartDrawerService } from '../../core/cart/cart-drawer.service';
+import { CampaignSelectionService } from '../../core/checkout/campaign-selection.service';
+import { CheckoutService } from '../../core/checkout/checkout.service';
 import { InventoryService } from '../../core/inventory/inventory.service';
 import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.service';
 
-type FilterPanel = 'where' | 'when' | 'audience' | 'investment' | null;
+type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | null;
 
 @Component({
   imports: [CurrencyPipe, RouterLink],
@@ -16,7 +19,7 @@ type FilterPanel = 'where' | 'when' | 'audience' | 'investment' | null;
   template: `
     <div class="aurum-map">
       <form class="map-toolbar" (submit)="search($event)" aria-label="Busca do inventário">
-        <button class="map-toolbar__field campaign-field" type="button" (click)="panel.set(null)" title="A campanha será escolhida no checkout"><small>Campanha</small><strong>Escolher no checkout</strong></button>
+        <button class="map-toolbar__field campaign-field" type="button" [class.active]="panel()==='campaign'" (click)="togglePanel('campaign')"><small>Campanha</small><strong>{{selectedCampaign()?.name || 'Selecionar ou criar'}}</strong></button>
         <button class="map-toolbar__field" type="button" [class.active]="panel()==='where'" (click)="togglePanel('where')"><small>Onde</small><strong>{{query() || 'Todas as regiões'}}</strong></button>
         <button class="map-toolbar__field" type="button" [class.active]="panel()==='when'" (click)="togglePanel('when')"><small>Quando</small><strong>{{periodicity()}}</strong></button>
         <button class="map-toolbar__field" type="button" [class.active]="panel()==='audience'" (click)="togglePanel('audience')"><small>Público</small><strong>Todos os perfis</strong></button>
@@ -27,21 +30,33 @@ type FilterPanel = 'where' | 'when' | 'audience' | 'investment' | null;
       </form>
 
       @if (panel(); as activePanel) {
-        <div class="toolbar-popover" [class.toolbar-popover--where]="activePanel==='where'" role="dialog" [attr.aria-label]="activePanel==='where'?'Buscar local':activePanel==='when'?'Escolher período':activePanel==='audience'?'Público':'Investimento'">
+        <div class="toolbar-popover" [class.toolbar-popover--where]="activePanel==='where'" [class.toolbar-popover--campaign]="activePanel==='campaign'" role="dialog" [attr.aria-label]="activePanel==='campaign'?'Escolher campanha':activePanel==='where'?'Buscar local':activePanel==='when'?'Escolher período':activePanel==='audience'?'Público':'Investimento'">
           @switch (activePanel) {
+            @case ('campaign') {
+              <h2>Campanha</h2>
+              @if (!auth.user()) { <p>Você pode explorar o mapa sem login. Entre para escolher ou criar uma campanha.</p><a routerLink="/login" [queryParams]="{returnUrl:'/mapa'}">Entrar</a> }
+              @else if (auth.user()?.kycStatus !== 'approved') { <p>Seu cadastro precisa ser aprovado para criar ou selecionar uma campanha.</p><a routerLink="/kyc-status">Ver andamento do cadastro</a> }
+              @else {
+                <label for="map-campaign">Campanha existente</label>
+                <select id="map-campaign" [value]="campaignSelection.campaignId() ?? ''" (change)="selectCampaign($any($event.target).value)"><option value="">Escolher campanha</option>@for(campaign of campaigns();track campaign.id){<option [value]="campaign.id">{{campaign.name}}</option>}</select>
+                <button class="campaign-create-toggle" type="button" (click)="creatingCampaign.update(value=>!value)">{{creatingCampaign()?'Cancelar criação':'+ Criar campanha'}}</button>
+                @if(creatingCampaign()) { <div class="campaign-create-fields"><label for="campaign-name">Nome</label><input id="campaign-name" [value]="newCampaignName()" (input)="newCampaignName.set($any($event.target).value)" /><label for="campaign-product">Produto</label><input id="campaign-product" [value]="newCampaignProduct()" (input)="newCampaignProduct.set($any($event.target).value)" /><label for="campaign-job">Job (opcional)</label><input id="campaign-job" [value]="newCampaignJob()" (input)="newCampaignJob.set($any($event.target).value)" /><label for="campaign-start">Início previsto</label><input id="campaign-start" type="date" [value]="newCampaignStart()" (input)="newCampaignStart.set($any($event.target).value)" /><label for="campaign-end">Fim previsto</label><input id="campaign-end" type="date" [value]="newCampaignEnd()" (input)="newCampaignEnd.set($any($event.target).value)" /><label for="campaign-budget">Verba planejada</label><input id="campaign-budget" type="number" min="0" [value]="newCampaignBudget()" (input)="newCampaignBudget.set(+$any($event.target).value)" /><button type="button" (click)="createCampaign()" [disabled]="campaignBusy()">{{campaignBusy()?'Salvando…':'Criar e selecionar'}}</button></div> }
+                @if(campaignError()){<p role="alert">{{campaignError()}}</p>}
+              }
+            }
             @case ('where') { <h2>Onde anunciar?</h2><label for="map-query">Cidade, bairro ou avenida</label><input id="map-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Ex.: Avenida Paulista" /><p>A busca encontra locais e peças no inventário desta exibidora.</p> }
             @case ('when') { <h2>Quando</h2><p class="field-label">Periodicidade</p><div class="period-options">@for (period of ['Semanal','Bissemanal','Mensal']; track period) { <button type="button" [class.selected]="periodicity()===period" (click)="periodicity.set(period)">{{period}}</button> }</div><p>A disponibilidade por datas será confirmada antes de fechar o pedido.</p> }
             @case ('audience') { <h2>Público</h2><p>Dados demográficos e de renda ainda não são fornecidos pelo inventário WhiteLabel. A busca atual considera local, tipo de suporte e investimento.</p> }
             @case ('investment') { <h2>Investimento</h2><label for="map-max-price">Valor máximo por peça</label><select id="map-max-price" [value]="maxPrice() ?? ''" (change)="maxPrice.set($any($event.target).value ? +$any($event.target).value : null)"><option value="">Qualquer valor</option><option value="5000">Até R$ 5 mil</option><option value="10000">Até R$ 10 mil</option><option value="20000">Até R$ 20 mil</option><option value="30000">Até R$ 30 mil</option></select> }
           }
-          <div class="popover-actions"><button type="button" (click)="clearActivePanel()">Limpar</button><button type="button" (click)="applyPanel()">Aplicar</button></div>
+          @if(activePanel!=='campaign'){<div class="popover-actions"><button type="button" (click)="clearActivePanel()">Limpar</button><button type="button" (click)="applyPanel()">Aplicar</button></div>}
         </div>
       }
 
       <div class="map-workspace">
         <aside class="map-results" [class.sheet-expanded]="sheetExpanded()" aria-label="Pontos encontrados">
           <div class="map-results__heading"><span>Inventário</span><strong>{{points().length}} {{points().length===1?'ponto encontrado':'pontos encontrados'}}</strong><button type="button" class="sheet-toggle" (click)="sheetExpanded.update(value=>!value)">{{sheetExpanded()?'Ver mapa':'Ver lista'}}</button></div>
-          @if(sheetExpanded()) { <form class="mobile-filters" (submit)="search($event)"><label for="mobile-inventory-query">Buscar local</label><div><input id="mobile-inventory-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Cidade, bairro ou avenida" /><button type="submit">Buscar</button></div><button type="button" (click)="filtersOpen.set(true)">Mais filtros ☷</button></form> }
+          @if(sheetExpanded()) { <form class="mobile-filters" (submit)="search($event)"><label for="mobile-inventory-query">Buscar local</label><div><input id="mobile-inventory-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Cidade, bairro ou avenida" /><button type="submit">Buscar</button></div><div class="mobile-filter-actions"><button type="button" (click)="togglePanel('campaign')">{{selectedCampaign()?.name || 'Campanha'}}</button><button type="button" (click)="filtersOpen.set(true)">Mais filtros ☷</button></div></form> }
           @if (loading()) { <p class="map-feedback" role="status">Buscando pontos…</p> }
           @else if (error()) { <p class="map-feedback" role="alert">{{error()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
           @else if (!points().length) { <p class="map-feedback">Nenhum ponto corresponde à busca. Ajuste os filtros.</p> }
@@ -81,6 +96,9 @@ type FilterPanel = 'where' | 'when' | 'audience' | 'investment' | null;
 export class AurumMapPage implements AfterViewInit {
   @ViewChild('mapCanvas') private mapCanvas?: ElementRef<HTMLElement>;
   private readonly inventory = inject(InventoryService);
+  readonly auth = inject(AdvertiserAuthService);
+  readonly campaignSelection = inject(CampaignSelectionService);
+  private readonly checkout = inject(CheckoutService);
   private readonly mapsLoader = inject(GoogleMapsLoaderService);
   readonly cart = inject(CartService);
   private readonly cartDrawer = inject(CartDrawerService);
@@ -90,6 +108,17 @@ export class AurumMapPage implements AfterViewInit {
   private viewReady = false;
   readonly points = signal<InventoryPoint[]>([]);
   readonly mediaTypes = signal<string[]>([]);
+  readonly campaigns = signal<CheckoutCampaign[]>([]);
+  readonly selectedCampaign = computed(() => this.campaigns().find(c => c.id === this.campaignSelection.campaignId()) ?? null);
+  readonly creatingCampaign = signal(false);
+  readonly campaignBusy = signal(false);
+  readonly campaignError = signal('');
+  readonly newCampaignName = signal('');
+  readonly newCampaignProduct = signal('');
+  readonly newCampaignJob = signal('');
+  readonly newCampaignStart = signal('');
+  readonly newCampaignEnd = signal('');
+  readonly newCampaignBudget = signal(0);
   readonly selectedMediaTypes = signal<string[]>([]);
   readonly query = signal('');
   readonly maxPrice = signal<number | null>(null);
@@ -105,7 +134,11 @@ export class AurumMapPage implements AfterViewInit {
   readonly mapLoading = signal(false);
   readonly mapError = signal('');
 
-  constructor() { this.load(); }
+  constructor() {
+    this.inventory.filters().subscribe({ next: filters => this.mediaTypes.set(filters.mediaTypes) });
+    effect(() => { if (this.auth.user()?.kycStatus === 'approved') this.loadCampaigns(); });
+    this.load();
+  }
   ngAfterViewInit() { this.viewReady = true; void this.renderMap(); }
   @HostListener('document:keydown.escape') onEscape() { this.panel.set(null); this.filtersOpen.set(false); this.selectedId.set(null); }
   togglePanel(value: Exclude<FilterPanel, null>) { this.filtersOpen.set(false); this.panel.update(current => current === value ? null : value); }
@@ -113,6 +146,18 @@ export class AurumMapPage implements AfterViewInit {
   applyPanel() { this.panel.set(null); this.load(); }
   search(event: Event) { event.preventDefault(); this.panel.set(null); this.load(); }
   toggleMedia(type: string) { this.selectedMediaTypes.update(current => current.includes(type) ? current.filter(value => value!==type) : [...current,type]); }
+  selectCampaign(raw: string) { const id=Number(raw); this.campaignSelection.selectCampaign(Number.isInteger(id)&&id>0?id:null); }
+  private loadCampaigns() { this.checkout.context().subscribe({next: context => this.campaigns.set(context.campaigns), error: () => this.campaignError.set('Não foi possível carregar suas campanhas.')}); }
+  createCampaign() {
+    if(this.campaignBusy())return;
+    const name=this.newCampaignName().trim(), product=this.newCampaignProduct().trim(), startDate=this.newCampaignStart(), endDate=this.newCampaignEnd();
+    if(name.length<3||product.length<2||!startDate||!endDate||endDate<startDate){this.campaignError.set('Informe nome, produto e datas válidas.');return;}
+    this.campaignBusy.set(true);this.campaignError.set('');
+    this.checkout.createCampaign({name,product,job:this.newCampaignJob().trim(),startDate,endDate,budget:this.newCampaignBudget()}).pipe(finalize(()=>this.campaignBusy.set(false))).subscribe({
+      next: campaign => { this.campaignSelection.selectCampaign(campaign.id); this.creatingCampaign.set(false); this.panel.set(null); this.loadCampaigns(); },
+      error: () => this.campaignError.set('Não foi possível criar a campanha. Confira o cadastro comercial e tente novamente.'),
+    });
+  }
   addToCart(point: InventoryPoint) { this.cart.add(point); this.cartDrawer.open.set(true); }
   highlight(id: number) { this.highlightedId.set(id); }
   select(id: number) { this.selectedId.set(id); this.sheetExpanded.set(false); const point=this.points().find(item=>item.id===id); if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);} }
@@ -120,7 +165,6 @@ export class AurumMapPage implements AfterViewInit {
     this.loading.set(true); this.error.set('');
     this.inventory.search({query:this.query(),maxPrice:this.maxPrice()??undefined}).pipe(finalize(()=>this.loading.set(false))).subscribe({
       next: all => {
-        if(!this.query() && !this.maxPrice() && !this.mediaTypes().length) this.mediaTypes.set([...new Set(all.map(point=>point.mediaType).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR')));
         const chosen=this.selectedMediaTypes();
         const points=chosen.length ? all.filter(point=>chosen.includes(point.mediaType)) : all;
         this.points.set(points);

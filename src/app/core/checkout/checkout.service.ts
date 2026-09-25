@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { delay, map, Observable, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CheckoutContext, CheckoutQuote, InventoryPoint, OrderConfirmation } from '../api/app-api.models';
+import { CheckoutCampaign, CheckoutContext, CheckoutQuote, InventoryPoint, OrderConfirmation } from '../api/app-api.models';
 
 interface OrderReceipt {
   orders: Array<{ code: string; city: string; period: string }>;
@@ -21,6 +21,13 @@ export class CheckoutService {
       }] }] });
     }
     return this.http.get<CheckoutContext>(`${environment.bffUrl}/app/checkout/context`);
+  }
+
+  createCampaign(payload: { name: string; product: string; job?: string; startDate: string; endDate: string; budget: number | null }) {
+    if (environment.usePrototypeFixtures) {
+      return of<Pick<CheckoutCampaign, 'id' | 'code' | 'name'>>({ id: Date.now(), code: 'DEMO', name: payload.name });
+    }
+    return this.http.post<Pick<CheckoutCampaign, 'id' | 'code' | 'name'>>(`${environment.bffUrl}/app/checkout/context/campaigns`, payload);
   }
 
   quote(items: InventoryPoint[], campaignId: number, periodCode: string) {
