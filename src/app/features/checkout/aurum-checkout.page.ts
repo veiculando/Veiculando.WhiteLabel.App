@@ -83,10 +83,12 @@ export class AurumCheckoutPage {
   selectCampaign(raw:string){
     const id=Number(raw);this.campaignId.set(Number.isInteger(id)&&id>0?id:null);
     this.campaignSelection.selectCampaign(this.campaignId());
-    const periods=this.periods();this.periodCode.set(periods.length===1?periods[0].codigo:'');
+    const periods=this.periods();const preferred=this.campaignSelection.periodCode();
+    const code=periods.some(period=>period.codigo===preferred)?preferred:periods.length===1?periods[0].codigo:'';
+    this.periodCode.set(code);this.campaignSelection.periodCode.set(code);
     this.quote.set(null);this.accepted.set(false);
   }
-  selectPeriod(code:string){this.periodCode.set(code);this.quote.set(null);this.accepted.set(false);}
+  selectPeriod(code:string){this.periodCode.set(code);this.campaignSelection.periodCode.set(code);this.quote.set(null);this.accepted.set(false);}
   getQuote(){
     if(this.loading()||!this.cart.count())return;
     if(!this.prototype&&!this.auth.user()){void this.router.navigate(['/login'],{queryParams:{returnUrl:'/checkout'}});return;}

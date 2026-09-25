@@ -34,11 +34,13 @@ export interface InventorySearch {
   mediaType?: string;
   minPrice?: number;
   maxPrice?: number;
+  periodCode?: string;
 }
 
 export interface InventoryFilters {
   mediaTypes: string[];
   cities: Array<{ name: string; state: string }>;
+  periods: Array<{ code: string; name: string; periodicity: string; startDate: string; endDate: string }>;
 }
 
 export interface CheckoutQuote {

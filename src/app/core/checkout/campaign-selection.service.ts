@@ -8,6 +8,5 @@ export class CampaignSelectionService {
 
   selectCampaign(id: number | null) {
     this.campaignId.set(id);
-    this.periodCode.set('');
   }
 }

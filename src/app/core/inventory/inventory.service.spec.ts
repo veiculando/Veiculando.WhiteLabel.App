@@ -9,7 +9,7 @@ describe('InventoryService', () => {
     const service = TestBed.inject(InventoryService);
     const http = TestBed.inject(HttpTestingController);
     service.filters().subscribe(filters => expect(filters.mediaTypes).toEqual(['Outdoor', 'LED']));
-    http.expectOne('/api/wl/app/inventory/filters').flush({ mediaTypes: ['Outdoor', 'LED'], cities: [] });
+    http.expectOne('/api/wl/app/inventory/filters').flush({ mediaTypes: ['Outdoor', 'LED'], cities: [], periods: [] });
     http.verify();
   });
 });
