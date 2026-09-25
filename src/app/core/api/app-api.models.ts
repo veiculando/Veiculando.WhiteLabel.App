@@ -1,4 +1,4 @@
-export type AccountType = 'pf' | 'pj';
+export type AccountType = 'ad' | 'ag' | 'pf' | 'pj';
 export type KycStatus = 'incomplete' | 'pending' | 'in_review' | 'adjustments_required' | 'approved' | 'rejected' | 'suspended';
 
 export interface SessionResponse {

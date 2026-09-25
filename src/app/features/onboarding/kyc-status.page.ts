@@ -14,23 +14,58 @@ import { KycService } from '../../core/kyc/kyc.service';
       <button class="primary" type="button" (click)="load()">Tentar novamente</button>
     } @else {
       <h2>{{ title() }}</h2><p>{{ message() }}</p>
+      @if(reason()){<p role="status">Motivo informado pela análise: {{reason()}}</p>}
       <div class="timeline"><span class="done">Dados enviados</span><span [class.done]="status()==='in_review'||status()==='approved'">Verificação</span><span [class.done]="status()==='approved'">Análise</span><span [class.done]="status()==='approved'">Cadastro liberado</span></div>
+      @if(status()==='pending'||status()==='adjustments_required'){
+        <div class="kyc-documents">
+          <h3>Documentos para análise</h3>
+          <p>Envie o contrato social e um documento do responsável. PDF, JPG ou PNG, até 10 MB cada.</p>
+          @for(item of documentTypes;track item.type){
+            <label>{{item.label}} <input type="file" accept="application/pdf,image/jpeg,image/png" (change)="upload(item.type,$event)" [disabled]="uploading()" /></label>
+            @if(hasDocument(item.type)){<small>Documento recebido</small>}
+          }
+          @if(uploadError()){<p role="alert">{{uploadError()}}</p>}
+          @if(uploading()){<p role="status">Enviando documento…</p>}
+        </div>
+      }
       @if(status()==='approved'){<a class="primary" routerLink="/mapa">Explorar inventário</a>}@else if(status()==='adjustments_required'){<a class="primary" routerLink="/tipo-conta">Corrigir cadastro</a>}@else{<a class="secondary" routerLink="/mapa">Explorar inventário</a>}
     }
   </section>`,
   styleUrls: ['./onboarding.scss'],
+  styles: ['.kyc-documents{display:grid;gap:12px;padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--white)}.kyc-documents h3,.kyc-documents p{margin:0}.kyc-documents small{color:var(--success);font-weight:700}.kyc-documents input{width:100%;font-size:.8rem}'],
 })
 export class KycStatusPage {
   private readonly kyc = inject(KycService);
   readonly status = signal<KycStatus>('incomplete');
   readonly loading = signal(true);
   readonly error = signal('');
+  readonly reason = signal('');
+  readonly uploading = signal(false);
+  readonly uploadError = signal('');
+  readonly documents = signal<Array<{ id: string; name: string; type: string }>>([]);
+  readonly documentTypes = [
+    { type: 'corporate', label: 'Contrato social' },
+    { type: 'representative', label: 'Identificação do responsável' },
+    { type: 'address', label: 'Comprovante de endereço (opcional)' },
+  ];
   constructor() { this.load(); }
   load() {
     this.loading.set(true); this.error.set('');
     this.kyc.status().subscribe({
-      next: ({ status }) => { this.status.set(status); this.loading.set(false); },
+      next: ({ status, reason }) => { this.status.set(status); this.reason.set(reason ?? ''); this.loading.set(false); this.loadDocuments(); },
       error: () => { this.error.set('Não foi possível verificar a análise cadastral.'); this.loading.set(false); },
+    });
+  }
+  hasDocument(type: string) { return this.documents().some(item => item.type === type); }
+  private loadDocuments() { this.kyc.documents().subscribe({ next: documents => this.documents.set(documents) }); }
+  upload(type: string, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.uploadError.set(''); this.uploading.set(true);
+    this.kyc.uploadDocument(type, file).subscribe({
+      next: () => { this.uploading.set(false); this.loadDocuments(); input.value = ''; },
+      error: () => { this.uploading.set(false); this.uploadError.set('Não foi possível enviar o documento. Confira o arquivo e tente novamente.'); },
     });
   }
   title() {
