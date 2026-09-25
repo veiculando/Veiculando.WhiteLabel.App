@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 import { CheckoutContext, CheckoutQuote, InventoryPoint, OrderConfirmation } from '../../core/api/app-api.models';
 import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 import { CartService } from '../../core/cart/cart.service';
+import { CampaignSelectionService } from '../../core/checkout/campaign-selection.service';
 import { CheckoutService } from '../../core/checkout/checkout.service';
 import { environment } from '../../../environments/environment';
 
@@ -45,6 +46,7 @@ import { environment } from '../../../environments/environment';
 export class AurumCheckoutPage {
   readonly cart=inject(CartService);
   private readonly checkout=inject(CheckoutService);
+  private readonly campaignSelection=inject(CampaignSelectionService);
   readonly auth=inject(AdvertiserAuthService);
   private readonly router=inject(Router);
   readonly prototype=environment.usePrototypeFixtures;
@@ -71,17 +73,22 @@ export class AurumCheckoutPage {
     if(!this.prototype&&this.auth.user()?.kycStatus!=='approved')return;
     this.checkout.context().subscribe({next:context=>{
       this.context.set(context);
-      if(context.campaigns.length===1)this.selectCampaign(String(context.campaigns[0].id));
+      const selected=context.campaigns.find(c=>c.id===this.campaignSelection.campaignId());
+      if(selected)this.selectCampaign(String(selected.id));
+      else if(context.campaigns.length===1)this.selectCampaign(String(context.campaigns[0].id));
     },error:()=>this.error.set('Não foi possível carregar as campanhas e os períodos disponíveis.')});
   }
   canSubmit(){return this.prototype||this.auth.user()?.kycStatus==='approved';}
   remove(id:number){this.cart.remove(id);this.quote.set(null);this.accepted.set(false);}
   selectCampaign(raw:string){
     const id=Number(raw);this.campaignId.set(Number.isInteger(id)&&id>0?id:null);
-    const periods=this.periods();this.periodCode.set(periods.length===1?periods[0].codigo:'');
+    this.campaignSelection.selectCampaign(this.campaignId());
+    const periods=this.periods();const preferred=this.campaignSelection.periodCode();
+    const code=periods.some(period=>period.codigo===preferred)?preferred:periods.length===1?periods[0].codigo:'';
+    this.periodCode.set(code);this.campaignSelection.periodCode.set(code);
     this.quote.set(null);this.accepted.set(false);
   }
-  selectPeriod(code:string){this.periodCode.set(code);this.quote.set(null);this.accepted.set(false);}
+  selectPeriod(code:string){this.periodCode.set(code);this.campaignSelection.periodCode.set(code);this.quote.set(null);this.accepted.set(false);}
   getQuote(){
     if(this.loading()||!this.cart.count())return;
     if(!this.prototype&&!this.auth.user()){void this.router.navigate(['/login'],{queryParams:{returnUrl:'/checkout'}});return;}

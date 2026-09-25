@@ -31,6 +31,14 @@ describe('CheckoutService', () => {
     ] }] });
   });
 
+  it('cria campanha comercial sem aceitar IDs de cliente ou agência do navegador', () => {
+    service.createCampaign({ name: 'Verão', product: 'Produto', startDate: '2026-10-01', endDate: '2026-11-01', budget: 30000 })
+      .subscribe((campaign) => expect(campaign.id).toBe(11));
+    const request = http.expectOne('/api/wl/app/checkout/context/campaigns');
+    expect(request.request.body).toEqual({ name: 'Verão', product: 'Produto', startDate: '2026-10-01', endDate: '2026-11-01', budget: 30000 });
+    request.flush({ id: 11, code: 'C-11', name: 'Verão' });
+  });
+
   it('envia IDs, campanha e período ao cotar; preço e disponibilidade vêm do servidor', () => {
     service.quote([point], 10, 'P-1').subscribe();
     const request = http.expectOne('/api/wl/app/checkout/quote');
