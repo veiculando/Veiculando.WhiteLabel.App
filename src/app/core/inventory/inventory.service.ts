@@ -21,7 +21,7 @@ export class InventoryService {
         mediaTypes: [...new Set(PROTOTYPE_POINTS.map(point => point.mediaType))].sort(),
         cities: [...new Map(PROTOTYPE_POINTS.map(point => [`${point.city}/${point.state}`, { name: point.city, state: point.state }])).values()],
         periods: [{ code: 'DEMO-P1', name: 'Próximos 14 dias', periodicity: 'Bissemanal', startDate: new Date().toISOString(), endDate: new Date(Date.now() + 14 * 86_400_000).toISOString() }],
-        audience: { ageRanges: [], incomeRanges: [], psychographicProfiles: [] },
+        audience: { ageRanges: [], incomeRanges: [], psychographicProfiles: [], poiCategories: [] },
       });
     }
     return this.http.get<InventoryFilters>(`${environment.bffUrl}/app/inventory/filters`);
@@ -30,13 +30,18 @@ export class InventoryService {
   search(filter: InventorySearch): Observable<InventoryPoint[]> {
     if (environment.usePrototypeFixtures) {
       const query = filter.query?.trim().toLocaleLowerCase('pt-BR');
+      let invested = 0;
       return of(PROTOTYPE_POINTS.filter((point) =>
         (!query || `${point.name} ${point.address} ${point.mediaType}`.toLocaleLowerCase('pt-BR').includes(query)) &&
         (!filter.city || point.city.toLocaleLowerCase('pt-BR').includes(filter.city.trim().toLocaleLowerCase('pt-BR'))) &&
         (!filter.mediaType || point.mediaType === filter.mediaType) &&
         (filter.minPrice == null || point.price >= filter.minPrice) &&
         (filter.maxPrice == null || point.price <= filter.maxPrice)
-      ));
+      ).map(point => {
+        const recommended = filter.totalBudget != null && point.available && invested + point.price <= filter.totalBudget;
+        if (recommended) invested += point.price;
+        return { ...point, recommended };
+      }));
     }
 
     let params = new HttpParams();

@@ -26,6 +26,7 @@ export interface InventoryPoint {
   imageUrl?: string;
   audience?: number;
   audienceMatch?: number;
+  recommended?: boolean;
   illuminated?: boolean;
 }
 
@@ -40,6 +41,8 @@ export interface InventorySearch {
   ageRangeIds?: string;
   incomeRangeIds?: string;
   psychographicIds?: string;
+  poiCategoryIds?: string;
+  totalBudget?: number;
 }
 
 export interface InventoryFilters {
@@ -50,6 +53,7 @@ export interface InventoryFilters {
     ageRanges: Array<{ id: number; name: string }>;
     incomeRanges: Array<{ id: number; name: string }>;
     psychographicProfiles: Array<{ id: number; name: string }>;
+    poiCategories?: Array<{ id: number; name: string }>;
   };
 }
 
