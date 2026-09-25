@@ -31,6 +31,7 @@ export class InventoryService {
       const query = filter.query?.trim().toLocaleLowerCase('pt-BR');
       return of(PROTOTYPE_POINTS.filter((point) =>
         (!query || `${point.name} ${point.address} ${point.mediaType}`.toLocaleLowerCase('pt-BR').includes(query)) &&
+        (!filter.city || point.city.toLocaleLowerCase('pt-BR').includes(filter.city.trim().toLocaleLowerCase('pt-BR'))) &&
         (!filter.mediaType || point.mediaType === filter.mediaType) &&
         (filter.minPrice == null || point.price >= filter.minPrice) &&
         (filter.maxPrice == null || point.price <= filter.maxPrice)

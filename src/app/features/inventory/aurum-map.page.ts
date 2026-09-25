@@ -20,7 +20,7 @@ type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | n
     <div class="aurum-map">
       <form class="map-toolbar" (submit)="search($event)" aria-label="Busca do inventário">
         <button class="map-toolbar__field campaign-field" type="button" [class.active]="panel()==='campaign'" (click)="togglePanel('campaign')"><small>Campanha</small><strong>{{selectedCampaign()?.name || 'Selecionar ou criar'}}</strong></button>
-        <button class="map-toolbar__field" type="button" [class.active]="panel()==='where'" (click)="togglePanel('where')"><small>Onde</small><strong>{{query() || 'Todas as regiões'}}</strong></button>
+        <button class="map-toolbar__field" type="button" [class.active]="panel()==='where'" (click)="togglePanel('where')"><small>Onde</small><strong>{{query() || city() || 'Todas as regiões'}}</strong></button>
         <button class="map-toolbar__field" type="button" [class.active]="panel()==='when'" (click)="togglePanel('when')"><small>Quando</small><strong>{{selectedPeriod()?.name || 'Escolher período'}}</strong></button>
         <button class="map-toolbar__field" type="button" [class.active]="panel()==='audience'" (click)="togglePanel('audience')"><small>Público</small><strong>Todos os perfis</strong></button>
         <button class="map-toolbar__field" type="button" [class.active]="panel()==='investment'" (click)="togglePanel('investment')"><small>Investimento</small><strong>{{maxPrice() ? 'Até ' + (maxPrice() | currency:'BRL':'symbol':'1.0-0':'pt-BR') : 'Qualquer valor'}}</strong></button>
@@ -44,7 +44,7 @@ type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | n
                 @if(campaignError()){<p role="alert">{{campaignError()}}</p>}
               }
             }
-            @case ('where') { <h2>Onde anunciar?</h2><label for="map-query">Cidade, bairro ou avenida</label><input id="map-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Ex.: Avenida Paulista" /><p>A busca encontra locais e peças no inventário desta exibidora.</p> }
+            @case ('where') { <h2>Onde anunciar?</h2><label for="map-city">Cidade</label><input id="map-city" list="map-cities" [value]="city()" (input)="city.set($any($event.target).value)" placeholder="Todas as cidades" /><datalist id="map-cities">@for(item of cities();track item.name+'/'+item.state){<option [value]="item.name">{{item.state}}</option>}</datalist><label for="map-query">Bairro, avenida ou local</label><input id="map-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Ex.: Avenida Paulista" /><p>A busca encontra locais e peças no inventário desta exibidora.</p> }
             @case ('when') { <h2>Quando</h2><p class="field-label">Periodicidade</p><div class="period-options">@for (period of ['Semanal','Bissemanal','Mensal']; track period) { <button type="button" [class.selected]="periodicity()===period" (click)="choosePeriodicity(period)">{{period}}</button> }</div><div class="period-list" role="radiogroup" aria-label="Período de veiculação">@for(period of visiblePeriods();track period.code){<label><input type="radio" name="map-period" [checked]="campaignSelection.periodCode()===period.code" (change)="campaignSelection.periodCode.set(period.code)" />{{period.name}}</label>}@if(!visiblePeriods().length){<p>Não há períodos futuros para esta periodicidade.</p>}</div><p>Selecione um período. Preço e disponibilidade serão confirmados na cotação.</p> }
             @case ('audience') { <h2>Público</h2><p>Dados demográficos e de renda ainda não são fornecidos pelo inventário WhiteLabel. A busca atual considera local, tipo de suporte e investimento.</p> }
             @case ('investment') { <h2>Investimento</h2><label for="map-max-price">Valor máximo por peça</label><select id="map-max-price" [value]="maxPrice() ?? ''" (change)="maxPrice.set($any($event.target).value ? +$any($event.target).value : null)"><option value="">Qualquer valor</option><option value="5000">Até R$ 5 mil</option><option value="10000">Até R$ 10 mil</option><option value="20000">Até R$ 20 mil</option><option value="30000">Até R$ 30 mil</option></select> }
@@ -108,6 +108,8 @@ export class AurumMapPage implements AfterViewInit {
   private viewReady = false;
   readonly points = signal<InventoryPoint[]>([]);
   readonly mediaTypes = signal<string[]>([]);
+  readonly cities = signal<Array<{name:string;state:string}>>([]);
+  readonly city = signal('');
   readonly periods = signal<Array<{code:string;name:string;periodicity:string;startDate:string;endDate:string}>>([]);
   readonly selectedPeriod = computed(() => this.periods().find(p => p.code === this.campaignSelection.periodCode()) ?? null);
   readonly visiblePeriods = computed(() => this.periods().filter(p => p.periodicity === this.periodicity()));
@@ -138,14 +140,14 @@ export class AurumMapPage implements AfterViewInit {
   readonly mapError = signal('');
 
   constructor() {
-    this.inventory.filters().subscribe({ next: filters => { this.mediaTypes.set(filters.mediaTypes); this.periods.set(filters.periods); } });
+    this.inventory.filters().subscribe({ next: filters => { this.mediaTypes.set(filters.mediaTypes); this.cities.set(filters.cities); this.periods.set(filters.periods); } });
     effect(() => { if (this.auth.user()?.kycStatus === 'approved') this.loadCampaigns(); });
     this.load();
   }
   ngAfterViewInit() { this.viewReady = true; void this.renderMap(); }
   @HostListener('document:keydown.escape') onEscape() { this.panel.set(null); this.filtersOpen.set(false); this.selectedId.set(null); }
   togglePanel(value: Exclude<FilterPanel, null>) { this.filtersOpen.set(false); this.panel.update(current => current === value ? null : value); }
-  clearActivePanel() { if(this.panel()==='where') this.query.set(''); if(this.panel()==='when') this.campaignSelection.periodCode.set(''); if(this.panel()==='investment') this.maxPrice.set(null); this.panel.set(null); this.load(); }
+  clearActivePanel() { if(this.panel()==='where'){this.query.set('');this.city.set('');} if(this.panel()==='when') this.campaignSelection.periodCode.set(''); if(this.panel()==='investment') this.maxPrice.set(null); this.panel.set(null); this.load(); }
   applyPanel() { this.panel.set(null); this.load(); }
   search(event: Event) { event.preventDefault(); this.panel.set(null); this.load(); }
   toggleMedia(type: string) { this.selectedMediaTypes.update(current => current.includes(type) ? current.filter(value => value!==type) : [...current,type]); }
@@ -167,7 +169,7 @@ export class AurumMapPage implements AfterViewInit {
   select(id: number) { this.selectedId.set(id); this.sheetExpanded.set(false); const point=this.points().find(item=>item.id===id); if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);} }
   load() {
     this.loading.set(true); this.error.set('');
-    this.inventory.search({query:this.query(),maxPrice:this.maxPrice()??undefined,periodCode:this.campaignSelection.periodCode()||undefined}).pipe(finalize(()=>this.loading.set(false))).subscribe({
+    this.inventory.search({query:this.query(),city:this.city(),maxPrice:this.maxPrice()??undefined,periodCode:this.campaignSelection.periodCode()||undefined}).pipe(finalize(()=>this.loading.set(false))).subscribe({
       next: all => {
         const chosen=this.selectedMediaTypes();
         const points=chosen.length ? all.filter(point=>chosen.includes(point.mediaType)) : all;
