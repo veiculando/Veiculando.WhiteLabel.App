@@ -21,6 +21,7 @@ export class InventoryService {
         mediaTypes: [...new Set(PROTOTYPE_POINTS.map(point => point.mediaType))].sort(),
         cities: [...new Map(PROTOTYPE_POINTS.map(point => [`${point.city}/${point.state}`, { name: point.city, state: point.state }])).values()],
         periods: [{ code: 'DEMO-P1', name: 'Próximos 14 dias', periodicity: 'Bissemanal', startDate: new Date().toISOString(), endDate: new Date(Date.now() + 14 * 86_400_000).toISOString() }],
+        audience: { ageRanges: [], incomeRanges: [], psychographicProfiles: [] },
       });
     }
     return this.http.get<InventoryFilters>(`${environment.bffUrl}/app/inventory/filters`);
