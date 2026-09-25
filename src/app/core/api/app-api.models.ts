@@ -81,6 +81,7 @@ export interface CheckoutCampaign {
 
 export interface CheckoutContext {
   campaigns: CheckoutCampaign[];
+  clients?: Array<{ id: number; name: string }> | null;
 }
 
 export interface OrderConfirmation {

@@ -23,7 +23,7 @@ export class CheckoutService {
     return this.http.get<CheckoutContext>(`${environment.bffUrl}/app/checkout/context`);
   }
 
-  createCampaign(payload: { name: string; product: string; job?: string; startDate: string; endDate: string; budget: number | null }) {
+  createCampaign(payload: { name: string; product: string; job?: string; startDate: string; endDate: string; budget: number | null; clientId?: number }) {
     if (environment.usePrototypeFixtures) {
       return of<Pick<CheckoutCampaign, 'id' | 'code' | 'name'>>({ id: Date.now(), code: 'DEMO', name: payload.name });
     }

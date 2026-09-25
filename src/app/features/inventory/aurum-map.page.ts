@@ -40,7 +40,7 @@ type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | n
                 <label for="map-campaign">Campanha existente</label>
                 <select id="map-campaign" [value]="campaignSelection.campaignId() ?? ''" (change)="selectCampaign($any($event.target).value)"><option value="">Escolher campanha</option>@for(campaign of campaigns();track campaign.id){<option [value]="campaign.id">{{campaign.name}}</option>}</select>
                 <button class="campaign-create-toggle" type="button" (click)="creatingCampaign.update(value=>!value)">{{creatingCampaign()?'Cancelar criação':'+ Criar campanha'}}</button>
-                @if(creatingCampaign()) { <div class="campaign-create-fields"><label for="campaign-name">Nome</label><input id="campaign-name" [value]="newCampaignName()" (input)="newCampaignName.set($any($event.target).value)" /><label for="campaign-product">Produto</label><input id="campaign-product" [value]="newCampaignProduct()" (input)="newCampaignProduct.set($any($event.target).value)" /><label for="campaign-job">Job (opcional)</label><input id="campaign-job" [value]="newCampaignJob()" (input)="newCampaignJob.set($any($event.target).value)" /><label for="campaign-start">Início previsto</label><input id="campaign-start" type="date" [value]="newCampaignStart()" (input)="newCampaignStart.set($any($event.target).value)" /><label for="campaign-end">Fim previsto</label><input id="campaign-end" type="date" [value]="newCampaignEnd()" (input)="newCampaignEnd.set($any($event.target).value)" /><label for="campaign-budget">Verba planejada</label><input id="campaign-budget" type="number" min="0" [value]="newCampaignBudget()" (input)="newCampaignBudget.set(+$any($event.target).value)" /><button type="button" (click)="createCampaign()" [disabled]="campaignBusy()">{{campaignBusy()?'Salvando…':'Criar e selecionar'}}</button></div> }
+                @if(creatingCampaign()) { <div class="campaign-create-fields">@if(agencyClients();as clients){<label for="campaign-client">Anunciante representado</label><select id="campaign-client" [value]="newCampaignClientId() ?? ''" (change)="newCampaignClientId.set(+$any($event.target).value || null)"><option value="">Selecione o anunciante</option>@for(client of clients;track client.id){<option [value]="client.id">{{client.name}}</option>}</select>@if(!clients.length){<p>Nenhum anunciante com contrato ativo nesta exibidora. Solicite o vínculo antes de criar a campanha.</p>}}<label for="campaign-name">Nome</label><input id="campaign-name" [value]="newCampaignName()" (input)="newCampaignName.set($any($event.target).value)" /><label for="campaign-product">Produto</label><input id="campaign-product" [value]="newCampaignProduct()" (input)="newCampaignProduct.set($any($event.target).value)" /><label for="campaign-job">Job (opcional)</label><input id="campaign-job" [value]="newCampaignJob()" (input)="newCampaignJob.set($any($event.target).value)" /><label for="campaign-start">Início previsto</label><input id="campaign-start" type="date" [value]="newCampaignStart()" (input)="newCampaignStart.set($any($event.target).value)" /><label for="campaign-end">Fim previsto</label><input id="campaign-end" type="date" [value]="newCampaignEnd()" (input)="newCampaignEnd.set($any($event.target).value)" /><label for="campaign-budget">Verba planejada</label><input id="campaign-budget" type="number" min="0" [value]="newCampaignBudget()" (input)="newCampaignBudget.set(+$any($event.target).value)" /><button type="button" (click)="createCampaign()" [disabled]="campaignBusy() || (agencyClients() !== null && !newCampaignClientId())">{{campaignBusy()?'Salvando…':'Criar e selecionar'}}</button></div> }
                 @if(campaignError()){<p role="alert">{{campaignError()}}</p>}
               }
             }
@@ -124,6 +124,7 @@ export class AurumMapPage implements AfterViewInit {
   readonly selectedPeriod = computed(() => this.periods().find(p => p.code === this.campaignSelection.periodCode()) ?? null);
   readonly visiblePeriods = computed(() => this.periods().filter(p => p.periodicity === this.periodicity()));
   readonly campaigns = signal<CheckoutCampaign[]>([]);
+  readonly agencyClients = signal<Array<{id:number;name:string}> | null>(null);
   readonly selectedCampaign = computed(() => this.campaigns().find(c => c.id === this.campaignSelection.campaignId()) ?? null);
   readonly creatingCampaign = signal(false);
   readonly campaignBusy = signal(false);
@@ -134,6 +135,7 @@ export class AurumMapPage implements AfterViewInit {
   readonly newCampaignStart = signal('');
   readonly newCampaignEnd = signal('');
   readonly newCampaignBudget = signal(0);
+  readonly newCampaignClientId = signal<number | null>(null);
   readonly selectedMediaTypes = signal<string[]>([]);
   readonly query = signal('');
   readonly totalBudget = signal<number | null>(null);
@@ -168,13 +170,14 @@ export class AurumMapPage implements AfterViewInit {
     target.update(values=>values.includes(id)?values.filter(value=>value!==id):[...values,id]);
   }
   selectCampaign(raw: string) { const id=Number(raw); this.campaignSelection.selectCampaign(Number.isInteger(id)&&id>0?id:null); }
-  private loadCampaigns() { this.checkout.context().subscribe({next: context => this.campaigns.set(context.campaigns), error: () => this.campaignError.set('Não foi possível carregar suas campanhas.')}); }
+  private loadCampaigns() { this.checkout.context().subscribe({next: context => { this.campaigns.set(context.campaigns); this.agencyClients.set(context.clients ?? null); }, error: () => this.campaignError.set('Não foi possível carregar suas campanhas.')}); }
   createCampaign() {
     if(this.campaignBusy())return;
     const name=this.newCampaignName().trim(), product=this.newCampaignProduct().trim(), startDate=this.newCampaignStart(), endDate=this.newCampaignEnd();
     if(name.length<3||product.length<2||!startDate||!endDate||endDate<startDate){this.campaignError.set('Informe nome, produto e datas válidas.');return;}
+    if(this.agencyClients() !== null && !this.newCampaignClientId()){this.campaignError.set('Selecione o anunciante representado.');return;}
     this.campaignBusy.set(true);this.campaignError.set('');
-    this.checkout.createCampaign({name,product,job:this.newCampaignJob().trim(),startDate,endDate,budget:this.newCampaignBudget()}).pipe(finalize(()=>this.campaignBusy.set(false))).subscribe({
+    this.checkout.createCampaign({name,product,job:this.newCampaignJob().trim(),startDate,endDate,budget:this.newCampaignBudget(),...(this.newCampaignClientId()?{clientId:this.newCampaignClientId()!}:{})}).pipe(finalize(()=>this.campaignBusy.set(false))).subscribe({
       next: campaign => { this.campaignSelection.selectCampaign(campaign.id); this.creatingCampaign.set(false); this.panel.set(null); this.loadCampaigns(); },
       error: () => this.campaignError.set('Não foi possível criar a campanha. Confira o cadastro comercial e tente novamente.'),
     });

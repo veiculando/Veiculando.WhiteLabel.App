@@ -39,6 +39,15 @@ describe('CheckoutService', () => {
     request.flush({ id: 11, code: 'C-11', name: 'Verão' });
   });
 
+  it('envia o cliente representado escolhido pela agência para validação no BFF', () => {
+    service.createCampaign({ name: 'Verão', product: 'Produto', startDate: '2026-10-01', endDate: '2026-11-01', budget: 30000, clientId: 12 })
+      .subscribe();
+    const request = http.expectOne('/api/wl/app/checkout/context/campaigns');
+    expect(request.request.body.clientId).toBe(12);
+    expect(request.request.body).not.toHaveProperty('agencyId');
+    request.flush({ id: 11, code: 'C-11', name: 'Verão' });
+  });
+
   it('envia IDs, campanha e período ao cotar; preço e disponibilidade vêm do servidor', () => {
     service.quote([point], 10, 'P-1').subscribe();
     const request = http.expectOne('/api/wl/app/checkout/quote');
