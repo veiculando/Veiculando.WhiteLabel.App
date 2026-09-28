@@ -8,7 +8,7 @@ import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
   imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="auth-card">
+    <div class="auth-card login-card">
       <div><h2>Entrar</h2><p class="lead">Acesse sua conta para gerenciar suas campanhas.</p></div>
       @if (error()) { <p class="alert" role="alert">{{ error() }}</p> }
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -17,6 +17,7 @@ import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
         <a class="forgot" routerLink="/esqueci-senha">Esqueci a senha</a>
         <button class="primary-action" type="submit" [disabled]="form.invalid || loading()">{{ loading() ? 'Entrando…' : 'Entrar' }}</button>
       </form>
+      <div class="login-divider"><span>ou</span></div>
       <p class="switch">Ainda não tem conta? <a routerLink="/cadastre-se">Cadastre-se</a></p>
     </div>
   `,

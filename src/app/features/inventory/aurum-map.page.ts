@@ -266,12 +266,25 @@ export class AurumMapPage implements AfterViewInit {
   }
   private async searchPoiPlaces(categories: string[]): Promise<PoiPlace[]> {
     const maps = await this.mapsLoader.load();
-    const { Place } = await maps.importLibrary('places');
-    const locationBias = this.map?.getBounds() ?? { north: -23.25, south: -23.85, east: -46.2, west: -47.05 };
-    const results = await Promise.all(categories.map(async category => {
-      const { places } = await Place.searchByText({ textQuery: `${category} ${this.city()}`.trim(), fields: ['displayName', 'location'], locationBias, maxResultCount: 20, language: 'pt-BR', region: 'br' });
-      return (places ?? []).filter((place: any) => place.location).map((place: any) => ({ name: place.displayName || category, category, latitude: place.location.lat(), longitude: place.location.lng() } as PoiPlace));
-    }));
+    const { PlacesService, PlacesServiceStatus } = await maps.importLibrary('places');
+    if (!this.map && !this.mapCanvas) throw new Error('Map canvas is not ready');
+    const service = new PlacesService(this.map ?? this.mapCanvas!.nativeElement);
+    const results = await Promise.all(categories.map(category => new Promise<PoiPlace[]>((resolve, reject) => {
+      const bounds = this.map?.getBounds();
+      const request = bounds
+        ? { query: `${category} ${this.city()}`.trim(), bounds }
+        : { query: `${category} ${this.city()}`.trim(), location: new maps.LatLng(-23.5614, -46.6559), radius: 50000 };
+      service.textSearch(request, (places: any[] | null, status: string) => {
+        if (status === PlacesServiceStatus.ZERO_RESULTS) { resolve([]); return; }
+        if (status !== PlacesServiceStatus.OK) { reject(new Error(`Places search failed: ${status}`)); return; }
+        resolve((places ?? []).filter(place => place.geometry?.location).slice(0, 20).map(place => ({
+          name: place.name || category,
+          category,
+          latitude: place.geometry.location.lat(),
+          longitude: place.geometry.location.lng(),
+        })));
+      });
+    })));
     return results.flat().filter((place, index, all) => all.findIndex(other => other.latitude === place.latitude && other.longitude === place.longitude) === index);
   }
   private pieceIcon(point: InventoryPoint): object {
