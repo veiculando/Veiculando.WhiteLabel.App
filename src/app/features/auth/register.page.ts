@@ -5,6 +5,14 @@ import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AdvertiserAuthService, RegistrationPolicy } from '../../core/auth/advertiser-auth.service';
 
+export function formatBrazilianPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 11);
+  const area = digits.slice(0, 2);
+  const local = digits.slice(2);
+  const splitAt = digits.length > 10 ? 5 : 4;
+  return !digits ? '' : digits.length <= 2 ? `(${area}` : `(${area}) ${local.slice(0, splitAt)}${local.length > splitAt ? `-${local.slice(splitAt)}` : ''}`;
+}
+
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -17,11 +25,13 @@ import { AdvertiserAuthService, RegistrationPolicy } from '../../core/auth/adver
         <label>Nome completo<input formControlName="name" autocomplete="name" placeholder="Seu nome" maxlength="200" /></label>
         <label>E-mail<input type="email" formControlName="email" autocomplete="email" placeholder="seu@email.com.br" maxlength="254" /></label>
         @if(policy()?.requireCorporateEmail){<small>Use o e-mail corporativo da sua organização.</small>}
-        <label>Celular<input type="tel" formControlName="phone" autocomplete="tel" placeholder="(11) 90000-0000" maxlength="30" /></label>
+        <label>Celular<input type="tel" formControlName="phone" autocomplete="tel-national" inputmode="tel" placeholder="(11) 90000-0000" maxlength="15" (input)="formatPhone($event)" /></label>
         <label>Senha<input type="password" formControlName="password" autocomplete="new-password" placeholder="Crie uma senha" aria-describedby="password-help" /></label>
         <small id="password-help">Pelo menos 8 caracteres, com letras e números.</small>
+        <label>Confirme sua senha<input type="password" formControlName="confirmPassword" autocomplete="new-password" placeholder="Digite a senha novamente" /></label>
+        @if(form.controls.confirmPassword.touched && passwordsDiffer()){<small class="registration-error" role="alert">As senhas não coincidem.</small>}
         <label class="registration-consent"><input type="checkbox" formControlName="acceptedTerms" /> <span>Li e aceito os Termos de uso e a Política de privacidade.</span></label>
-        <button class="primary-action" [disabled]="form.invalid || loading() || !policy()">{{loading()?'Criando…':'Criar conta'}}</button>
+        <button class="primary-action" [disabled]="form.invalid || passwordsDiffer() || loading() || !policy()">{{loading()?'Criando…':'Criar conta'}}</button>
       </form>
       <p class="switch">Já tem conta? <a routerLink="/login">Entrar</a></p>
     </div>
@@ -39,10 +49,15 @@ export class RegisterPage {
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
-    phone: ['', [Validators.required, Validators.pattern(/^[+()\s\d.-]{10,30}$/)]],
+    phone: ['', [Validators.required, Validators.pattern(/^\(\d{2}\) \d{4,5}-\d{4}$/)]],
     password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[\p{L}])(?=.*[0-9]).+$/u)]],
+    confirmPassword: ['', Validators.required],
     acceptedTerms: [false, Validators.requiredTrue],
   });
+  passwordsDiffer() { return this.form.controls.password.value !== this.form.controls.confirmPassword.value; }
+  formatPhone(event: Event) {
+    this.form.controls.phone.setValue(formatBrazilianPhone((event.target as HTMLInputElement).value));
+  }
   constructor() { this.loadPolicy(); }
   loadPolicy() {
     this.loadingPolicy.set(true); this.error.set('');
@@ -53,24 +68,33 @@ export class RegisterPage {
   }
   submit() {
     const policy = this.policy();
-    if (this.form.invalid || !policy || this.loading()) { this.form.markAllAsTouched(); return; }
+    if (this.form.invalid || this.passwordsDiffer() || !policy || this.loading()) { this.form.markAllAsTouched(); return; }
     const value = this.form.getRawValue();
     const phone = value.phone.replace(/[^0-9]/g, '');
     if (phone.length < 10 || phone.length > 13 || new TextEncoder().encode(value.password).length > 72) {
       this.error.set('Confira o celular e use uma senha com até 72 bytes.'); return;
     }
     this.loading.set(true); this.error.set('');
-    this.auth.register({ ...value, email: value.email.trim(), phone, termsVersion: policy.termsVersion, privacyVersion: policy.privacyVersion })
+    this.auth.register({ name: value.name.trim(), email: value.email.trim(), password: value.password, phone, acceptedTerms: value.acceptedTerms, termsVersion: policy.termsVersion, privacyVersion: policy.privacyVersion })
       .pipe(finalize(() => this.loading.set(false))).subscribe({
-        next: () => void this.router.navigate(['/confirmar-email'], { queryParams: { email: value.email.trim() } }),
+        next: () => this.openConfirmation(value.email.trim()),
         error: (failure: HttpErrorResponse) => {
           if (failure.status === 503) {
-            void this.router.navigate(['/confirmar-email'], { queryParams: { email: value.email.trim(), delivery: 'failed' } });
+            this.openConfirmation(value.email.trim(), true);
             return;
           }
           this.error.set(typeof failure.error?.message === 'string' ? failure.error.message : 'Não foi possível criar o cadastro. Revise os dados e tente novamente.');
           this.policy.set(null);
         },
       });
+  }
+  private openConfirmation(email: string, deliveryFailed = false) {
+    const queryParams = { email, ...(deliveryFailed ? { delivery: 'failed' } : {}) };
+    void this.router.navigate(['/confirmar-email'], { queryParams }).catch(() => {
+      // A guia pode ter carregado uma versão anterior pouco antes do deploy.
+      // Uma navegação completa obtém o index e o chunk novos.
+      const query = new URLSearchParams(queryParams);
+      window.location.assign(`/confirmar-email?${query}`);
+    });
   }
 }
