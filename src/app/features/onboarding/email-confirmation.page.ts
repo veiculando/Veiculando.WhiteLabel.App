@@ -10,7 +10,8 @@ import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<section class="onboarding-card">
     <p class="step">Confirmação de e-mail</p><h2>Confirme seu acesso</h2>
-    <p>Informe o código de seis dígitos enviado ao seu e-mail. Ele expira em 15 minutos.</p>
+    <p>Se este é um cadastro novo, enviaremos um código de seis dígitos ao seu e-mail. Ele expira em 15 minutos.</p>
+    <p>Se você já tinha uma conta e não recebeu um novo código, <a routerLink="/login">entre com sua senha</a> ou <a routerLink="/esqueci-senha">recupere o acesso</a>.</p>
     @if(deliveryFailed){<p role="alert">O envio inicial falhou. Aguarde um minuto e use “Reenviar código”.</p>}
     <form [formGroup]="form" (ngSubmit)="confirm()">
       <label>E-mail<input type="email" formControlName="email" autocomplete="email" /></label>
