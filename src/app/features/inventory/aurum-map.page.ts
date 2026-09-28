@@ -12,6 +12,35 @@ import { InventoryService } from '../../core/inventory/inventory.service';
 import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.service';
 
 type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | null;
+type PoiPlace = { name: string; category: string; latitude: number; longitude: number };
+
+const POI_RADIUS_METERS = 5000;
+
+export function distanceMeters(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }): number {
+  const radians = Math.PI / 180;
+  const latitudeDelta = (b.latitude - a.latitude) * radians;
+  const longitudeDelta = (b.longitude - a.longitude) * radians;
+  const arc = Math.sin(latitudeDelta / 2) ** 2 + Math.cos(a.latitude * radians) * Math.cos(b.latitude * radians) * Math.sin(longitudeDelta / 2) ** 2;
+  return 12742000 * Math.atan2(Math.sqrt(arc), Math.sqrt(1 - arc));
+}
+
+export function supportIcon(mediaType: string): string {
+  const type = mediaType.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (type.includes('relogio')) return 'icon_relogio-rua.png';
+  if (type.includes('painel led') || type.includes('digital')) return 'icon_painel-led.png';
+  if (type.includes('abrigo')) return 'icon_abrigo-onibus.png';
+  if (type.includes('empena')) return 'icon_empena.png';
+  if (type.includes('outdoor')) return type.includes('premium') || type.includes('especial') ? 'icon_outdoor-special.png' : 'icon_outdoor-standard.png';
+  if (type.includes('indoor')) return 'icon_indoor.png';
+  if (type.includes('frontlight')) return 'icon_frontlight.png';
+  if (type.includes('mupi')) return 'icon_mupi.png';
+  if (type.includes('banca')) return 'icon_banca.png';
+  if (type.includes('triedro')) return 'icon_triedro.png';
+  if (type.includes('aeroporto')) return 'icon_aeroporto.png';
+  if (type.includes('rodoviario')) return 'icon_painel-rodoviario.png';
+  if (type.includes('movel')) return 'icon_midia-movel.png';
+  return 'icon_indefinido.png';
+}
 
 @Component({
   imports: [CurrencyPipe, RouterLink],
@@ -60,6 +89,7 @@ type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | n
           @if (loading()) { <p class="map-feedback" role="status">Buscando pontos…</p> }
           @else if (error()) { <p class="map-feedback" role="alert">{{error()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
           @else if (!points().length) { <p class="map-feedback">Nenhum ponto corresponde à busca. Ajuste os filtros.</p> }
+          @if (poiError()) { <p class="map-feedback" role="alert">{{poiError()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
           @else { <div class="map-results__list">
             @for (point of points(); track point.id) {
               <article class="map-card" [class.selected]="selectedId()===point.id" (mouseenter)="highlight(point.id)" (mouseleave)="highlightedId.set(null)">
@@ -77,6 +107,7 @@ type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | n
           <div #mapCanvas class="google-map" [class.is-unavailable]="mapError()" aria-label="Mapa Google com os pontos do inventário"></div>
           @if (mapLoading()) { <div class="map-state" role="status">Carregando mapa…</div> }
           @if (mapError()) { <div class="map-state map-state--error" role="alert"><strong>Mapa indisponível</strong><span>{{mapError()}}</span></div> }
+          @if (poiPlaces().length) { <div class="map-state map-state--poi" role="status">{{poiPlaces().length}} {{poiPlaces().length===1?'local de interesse destacado':'locais de interesse destacados'}} · peças até 5 km</div> }
           @if (selected(); as point) {
             <div class="map-popup" role="dialog" [attr.aria-label]="'Detalhes de '+point.name">
               <button class="map-popup__close" type="button" aria-label="Fechar detalhes" (click)="selectedId.set(null)">×</button>
@@ -88,7 +119,7 @@ type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | n
       </div>
       @if(filtersOpen()){
         <button class="filter-scrim" type="button" aria-label="Fechar filtros" (click)="filtersOpen.set(false)"></button>
-        <aside class="filter-drawer" aria-label="Mais filtros" role="dialog" aria-modal="true"><header><h2>Mais filtros</h2><button type="button" aria-label="Fechar filtros" (click)="filtersOpen.set(false)">×</button></header><div class="filter-drawer__body"><h3>Tipos de suporte</h3>@for(type of mediaTypes();track type){<label><input type="checkbox" [checked]="selectedMediaTypes().includes(type)" (change)="toggleMedia(type)" />{{type}}</label>}@if(!mediaTypes().length){<p>Os tipos serão exibidos após carregar o inventário.</p>}<hr/><h3>Interesses próximos (POI)</h3>@for(category of poiCategories();track category.id){<label><input type="checkbox" [checked]="poiCategoryIds().includes(category.id)" (change)="togglePoiCategory(category.id)" />{{category.name}}</label>}@if(!poiCategories().length){<p>Não há categorias de interesse cadastradas.</p>}<p>Essas categorias priorizam locais com o público correspondente.</p></div><footer><button type="button" (click)="selectedMediaTypes.set([]); poiCategoryIds.set([]); filtersOpen.set(false); load()">Limpar</button><button type="button" (click)="filtersOpen.set(false); load()">Refinar</button></footer></aside>
+        <aside class="filter-drawer" aria-label="Mais filtros" role="dialog" aria-modal="true"><header><h2>Mais filtros</h2><button type="button" aria-label="Fechar filtros" (click)="filtersOpen.set(false)">×</button></header><div class="filter-drawer__body"><h3>Tipos de suporte</h3>@for(type of mediaTypes();track type){<label><input type="checkbox" [checked]="selectedMediaTypes().includes(type)" (change)="toggleMedia(type)" />{{type}}</label>}@if(!mediaTypes().length){<p>Os tipos serão exibidos após carregar o inventário.</p>}<hr/><h3>Próximos de (POI)</h3><label for="map-poi-query">Procurar nesta área por</label><input id="map-poi-query" type="search" [value]="poiQuery()" (input)="poiQuery.set($any($event.target).value)" placeholder="Ex.: hospital, aeroporto" />@for(category of poiCategories();track category.id){<label><input type="checkbox" [checked]="poiCategoryIds().includes(category.id)" (change)="togglePoiCategory(category.id)" />{{category.name}}</label>}@if(!poiCategories().length){<p>Não há categorias de interesse cadastradas.</p>}<p>Os locais encontrados serão destacados no mapa. Exibiremos peças até 5 km deles.</p></div><footer><button type="button" (click)="selectedMediaTypes.set([]); poiCategoryIds.set([]); poiQuery.set(''); filtersOpen.set(false); load()">Limpar</button><button type="button" (click)="filtersOpen.set(false); load()">Refinar</button></footer></aside>
       }
     </div>
   `,
@@ -105,6 +136,9 @@ export class AurumMapPage implements AfterViewInit {
   private maps: any;
   private map: any;
   private markers: any[] = [];
+  private readonly markersById = new Map<number, any>();
+  private poiMarkers: any[] = [];
+  private requestVersion = 0;
   private viewReady = false;
   readonly points = signal<InventoryPoint[]>([]);
   readonly mediaTypes = signal<string[]>([]);
@@ -119,6 +153,9 @@ export class AurumMapPage implements AfterViewInit {
   readonly incomeRangeIds = signal<number[]>([]);
   readonly psychographicIds = signal<number[]>([]);
   readonly poiCategoryIds = signal<number[]>([]);
+  readonly poiQuery = signal('');
+  readonly poiPlaces = signal<PoiPlace[]>([]);
+  readonly poiError = signal('');
   readonly audienceActive = computed(() => this.gender()>0 || this.ageRangeIds().length>0 || this.incomeRangeIds().length>0 || this.psychographicIds().length>0);
   readonly periods = signal<Array<{code:string;name:string;periodicity:string;startDate:string;endDate:string}>>([]);
   readonly selectedPeriod = computed(() => this.periods().find(p => p.code === this.campaignSelection.periodCode()) ?? null);
@@ -194,20 +231,55 @@ export class AurumMapPage implements AfterViewInit {
     });
   }
   addToCart(point: InventoryPoint) { this.cart.add(point); this.cartDrawer.open.set(true); }
-  highlight(id: number) { this.highlightedId.set(id); }
-  select(id: number) { this.selectedId.set(id); this.sheetExpanded.set(false); const point=this.points().find(item=>item.id===id); if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);} }
+  highlight(id: number) { this.highlightedId.set(id); this.updatePieceIcons(); }
+  select(id: number) { this.selectedId.set(id); this.updatePieceIcons(); this.sheetExpanded.set(false); const point=this.points().find(item=>item.id===id); if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);} }
   load() {
-    this.loading.set(true); this.error.set('');
-    this.inventory.search({query:this.query(),city:this.city(),minPrice:this.minPrice()??undefined,maxPrice:this.maxPrice()??undefined,periodCode:this.campaignSelection.periodCode()||undefined,gender:this.gender()||undefined,ageRangeIds:this.ageRangeIds().join(','),incomeRangeIds:this.incomeRangeIds().join(','),psychographicIds:this.psychographicIds().join(','),poiCategoryIds:this.poiCategoryIds().join(',')}).pipe(finalize(()=>this.loading.set(false))).subscribe({
-      next: all => {
-        const chosen=this.selectedMediaTypes();
-        const points=chosen.length ? all.filter(point=>chosen.includes(point.mediaType)) : all;
-        this.points.set(points);
-        if(this.selectedId() && !points.some(point=>point.id===this.selectedId())) this.selectedId.set(null);
-        void this.renderMap();
-      },
-      error:()=>this.error.set('Não foi possível carregar o inventário.'),
+    const version = ++this.requestVersion;
+    this.loading.set(true); this.error.set(''); this.poiError.set('');
+    this.inventory.search({query:this.query(),city:this.city(),minPrice:this.minPrice()??undefined,maxPrice:this.maxPrice()??undefined,periodCode:this.campaignSelection.periodCode()||undefined,gender:this.gender()||undefined,ageRangeIds:this.ageRangeIds().join(','),incomeRangeIds:this.incomeRangeIds().join(','),psychographicIds:this.psychographicIds().join(','),poiCategoryIds:this.poiCategoryIds().join(',')}).subscribe({
+      next: all => { void this.applyResults(all, version); },
+      error:()=>{if(version===this.requestVersion){this.error.set('Não foi possível carregar o inventário.');this.loading.set(false);}},
     });
+  }
+  private async applyResults(all: InventoryPoint[], version: number) {
+    const chosen = this.selectedMediaTypes();
+    let points = chosen.length ? all.filter(point => chosen.includes(point.mediaType)) : all;
+    const categoryNames = this.poiCategories().filter(category => this.poiCategoryIds().includes(category.id)).map(category => category.name);
+    if (this.poiQuery().trim()) categoryNames.push(this.poiQuery().trim());
+    if (categoryNames.length) {
+      try {
+        const places = await this.searchPoiPlaces(categoryNames);
+        if (version !== this.requestVersion) return;
+        this.poiPlaces.set(places);
+        points = points.filter(point => places.some(place => distanceMeters(point, place) <= POI_RADIUS_METERS));
+      } catch {
+        if (version !== this.requestVersion) return;
+        this.poiPlaces.set([]);
+        this.poiError.set('Não foi possível buscar os locais de interesse no Google Maps. As peças continuam sem filtro de proximidade.');
+      }
+    } else this.poiPlaces.set([]);
+    if (version !== this.requestVersion) return;
+    this.points.set(points);
+    if (this.selectedId() && !points.some(point => point.id === this.selectedId())) this.selectedId.set(null);
+    void this.renderMap();
+    this.loading.set(false);
+  }
+  private async searchPoiPlaces(categories: string[]): Promise<PoiPlace[]> {
+    const maps = await this.mapsLoader.load();
+    const { Place } = await maps.importLibrary('places');
+    const locationBias = this.map?.getBounds() ?? { north: -23.25, south: -23.85, east: -46.2, west: -47.05 };
+    const results = await Promise.all(categories.map(async category => {
+      const { places } = await Place.searchByText({ textQuery: `${category} ${this.city()}`.trim(), fields: ['displayName', 'location'], locationBias, maxResultCount: 20, language: 'pt-BR', region: 'br' });
+      return (places ?? []).filter((place: any) => place.location).map((place: any) => ({ name: place.displayName || category, category, latitude: place.location.lat(), longitude: place.location.lng() } as PoiPlace));
+    }));
+    return results.flat().filter((place, index, all) => all.findIndex(other => other.latitude === place.latitude && other.longitude === place.longitude) === index);
+  }
+  private pieceIcon(point: InventoryPoint): object {
+    const active = this.selectedId() === point.id || this.highlightedId() === point.id;
+    return { url: `/assets/pins/tipo-suporte/${supportIcon(point.mediaType)}`, scaledSize: new this.maps.Size(active ? 50 : 37, active ? 62 : 46) };
+  }
+  private updatePieceIcons() {
+    for (const point of this.points()) this.markersById.get(point.id)?.setIcon(this.pieceIcon(point));
   }
   private async renderMap() {
     if(!this.viewReady||!this.mapCanvas)return;
@@ -215,14 +287,22 @@ export class AurumMapPage implements AfterViewInit {
     try {
       this.maps??=await this.mapsLoader.load();
       if(!this.map) this.map=new this.maps.Map(this.mapCanvas.nativeElement,{center:{lat:-23.5614,lng:-46.6559},zoom:12,mapTypeControl:false,streetViewControl:false,fullscreenControl:false,clickableIcons:false,gestureHandling:'cooperative'});
-      this.markers.forEach(marker=>marker.setMap(null));this.markers=[];
+      this.markers.forEach(marker=>marker.setMap(null));this.markers=[];this.markersById.clear();
+      this.poiMarkers.forEach(marker=>marker.setMap(null));this.poiMarkers=[];
       const bounds=new this.maps.LatLngBounds();
-      this.points().forEach((point,index)=>{
+      this.points().forEach(point=>{
         if(!Number.isFinite(point.latitude)||!Number.isFinite(point.longitude))return;
-        const marker=new this.maps.Marker({map:this.map,position:{lat:point.latitude,lng:point.longitude},label:{text:String(index+1),color:'#ffffff',fontWeight:'700'},title:point.name,icon:{path:this.maps.SymbolPath.CIRCLE,scale:this.highlightedId()===point.id?18:15,fillColor:this.selectedId()===point.id?'#d9b442':'#8a0009',fillOpacity:1,strokeColor:'#fff',strokeWeight:2}});
-        marker.addListener('click',()=>this.select(point.id));this.markers.push(marker);bounds.extend(marker.getPosition());
+        const marker=new this.maps.Marker({map:this.map,position:{lat:point.latitude,lng:point.longitude},title:point.name,icon:this.pieceIcon(point),opacity:point.recommended ? 1 : 0.9});
+        marker.addListener('click',()=>this.select(point.id));this.markers.push(marker);this.markersById.set(point.id,marker);bounds.extend(marker.getPosition());
       });
-      if(this.markers.length===1){this.map.setCenter(bounds.getCenter());this.map.setZoom(14);}else if(this.markers.length>1)this.map.fitBounds(bounds,76);
+      for(const place of this.poiPlaces()) {
+        const category = place.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const iconText = category.includes('hospital') ? 'H' : category.includes('aeroporto') ? '✈' : place.category.charAt(0).toUpperCase();
+        const marker = new this.maps.Marker({map:this.map,position:{lat:place.latitude,lng:place.longitude},title:`${place.category}: ${place.name}`,label:{text:iconText,color:'#fff',fontSize:'15px',fontWeight:'700'},icon:{path:this.maps.SymbolPath.CIRCLE,scale:16,fillColor:category.includes('hospital')?'#d93025':'#1a73e8',fillOpacity:1,strokeColor:'#fff',strokeWeight:3},zIndex:3000});
+        this.poiMarkers.push(marker);bounds.extend(marker.getPosition());
+      }
+      const totalMarkers=this.markers.length+this.poiMarkers.length;
+      if(totalMarkers===1){this.map.setCenter(bounds.getCenter());this.map.setZoom(14);}else if(totalMarkers>1)this.map.fitBounds(bounds,76);
     }catch(error){this.mapError.set(error instanceof Error?error.message:'Não foi possível carregar o Google Maps.');}
     finally{this.mapLoading.set(false);}
   }
