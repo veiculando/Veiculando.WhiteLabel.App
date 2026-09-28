@@ -14,6 +14,13 @@ describe('KycService', () => {
   });
   afterEach(() => http.verify());
 
+  it('envia apenas os dígitos do CNPJ na rota de consulta', () => {
+    service.lookupCompany('29.689.492/0001-56').subscribe(company => expect(company.active).toBe(false));
+    const request = http.expectOne('/api/wl/app/kyc/company/29689492000156');
+    expect(request.request.method).toBe('GET');
+    request.flush({ document: '29689492000156', legalName: 'Empresa Teste', city: 'Milhã', state: 'CE', active: false });
+  });
+
   it('envia conta agência e dados do responsável sem IDs comerciais escolhidos pelo navegador', () => {
     const payload: KycSubmission = {
       accountType: 'ag', tradeName: 'Agência Teste', legalName: 'Agência Teste Ltda',
