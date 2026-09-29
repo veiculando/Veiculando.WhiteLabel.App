@@ -3,15 +3,6 @@ import { Injectable, inject } from '@angular/core';
 
 type GoogleMapsApi = any;
 
-declare global {
-  interface Window {
-    google?: { maps?: GoogleMapsApi };
-    __VEICULANDO_RUNTIME_CONFIG__?: {
-      googleMapsBrowserApiKey?: string;
-    };
-  }
-}
-
 @Injectable({ providedIn: 'root' })
 export class GoogleMapsLoaderService {
   private readonly document = inject(DOCUMENT);
