@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { KycService } from '../../core/kyc/kyc.service';
+import { formatCnpj } from '../../core/forms/brazilian-fields';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -14,7 +15,7 @@ import { KycService } from '../../core/kyc/kyc.service';
       <h2>Localize sua empresa</h2>
       <p>Usaremos o CNPJ para preencher os dados públicos e reduzir erros.</p>
       <form [formGroup]="form" (ngSubmit)="lookup()">
-        <label>CNPJ<input formControlName="document" inputmode="numeric" placeholder="00.000.000/0000-00" /></label>
+        <label>CNPJ<input formControlName="document" inputmode="numeric" autocomplete="off" maxlength="18" placeholder="00.000.000/0000-00" (input)="formatDocument($event)" /></label>
         <button class="primary" [disabled]="loading()">{{ loading() ? 'Consultando…' : 'Consultar CNPJ' }}</button>
       </form>
       @if (error()) { <p role="alert">{{ error() }}</p> }
@@ -43,6 +44,12 @@ export class CompanyLookupPage {
   readonly error = signal('');
   readonly result = signal<{ document: string; legalName: string; city: string; state: string; active: boolean } | null>(null);
   readonly form = this.fb.nonNullable.group({ document: ['', Validators.required] });
+
+  formatDocument(event: Event) {
+    this.form.controls.document.setValue(formatCnpj((event.target as HTMLInputElement).value));
+    this.result.set(null);
+    this.error.set('');
+  }
 
   lookup() {
     const document = this.form.getRawValue().document;
