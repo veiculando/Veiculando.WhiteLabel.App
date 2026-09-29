@@ -1,5 +1,19 @@
 # VeiculandoWhiteLabelApp
 
+## Configuração de runtime
+
+O container gera `assets/runtime-config.js` ao iniciar. `GOOGLE_MAPS_BROWSER_API_KEY`
+habilita o mapa; `PROSPECCAO_ALLOWED_ORIGINS` é uma lista separada por vírgulas de
+origens exatas da Exibidora (por exemplo,
+`https://wl-exibidora-preview.veiculando.com.br`). Não use `*`, caminhos ou
+barra final. No preview, o Compose versionado em `Veiculando/deploy/preview`
+deriva a origem de `PREVIEW_EXIBIDORA_HOST` no Snaps; nenhum rebuild do Angular
+é necessário para alterá-la. Lista vazia ou inválida desliga o handoff.
+
+Para desenvolvimento local, o arquivo `src/assets/runtime-config.js` contém
+uma lista vazia por padrão. Configure uma origem local exata apenas na cópia
+de trabalho não versionada; não coloque tokens nesse arquivo.
+
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.17.
 
 ## Development server
