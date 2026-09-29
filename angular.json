@@ -29,13 +29,14 @@
               "src/favicon.ico",
               "src/favicon-neutral.svg",
               "src/assets",
-              "public"
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "/"
+              }
             ],
             "styles": [
-              "src/styles.scss",
-              "src/app/features/inventory/inventory.scss",
-              "src/app/features/inventory/inventory-responsive.scss",
-              "src/app/features/checkout/checkout.scss"
+              "src/styles.scss"
             ],
             "scripts": []
           },

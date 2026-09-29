@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" role="img" aria-labelledby="title">
   <title id="title">Aurum Mídia OOH</title>
-  <rect width="56" height="56" rx="18" fill="#8a0009"/>
-  <path d="M16 40 28 14l12 26h-7l-2.1-5.2h-6L22.7 40H16Zm11-11h2.3L28.2 25 27 29Z" fill="#d9b442"/>
-  <text x="70" y="31" fill="#1a1a1b" font-family="Georgia,serif" font-size="24" font-weight="700">Aurum</text>
-  <text x="71" y="45" fill="#544341" font-family="Arial,sans-serif" font-size="9" letter-spacing="2">MÍDIA OOH</text>
+  <rect width="56" height="56" rx="3" fill="#e7bc57"/>
+  <path d="M2 43 43 2h8L2 51Z" fill="#7e111b"/>
+  <text x="70" y="31" fill="#e7bc57" font-family="Georgia,serif" font-size="24" font-weight="700">Aurum</text>
+  <text x="71" y="45" fill="#e7bc57" font-family="Arial,sans-serif" font-size="9" letter-spacing="2">MÍDIA OOH</text>
 </svg>

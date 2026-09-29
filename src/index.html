@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>Configuração indisponível</title>
+  <title>Carregando…</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="">
@@ -11,7 +11,11 @@
 </head>
 <body>
   <app-root>
-    <p role="alert">Não foi possível carregar a configuração desta marca.</p>
+    <div id="app-bootstrap" role="status" aria-live="polite" style="min-height:100dvh;display:grid;place-content:center;justify-items:center;gap:16px;background:#fbf8f4;color:#4b2929;font:600 16px system-ui,sans-serif">
+      <span aria-hidden="true" style="width:42px;height:42px;border:4px solid #eadbd3;border-top-color:#8a0009;border-radius:50%;animation:bootstrap-spin .8s linear infinite"></span>
+      <span>Carregando a experiência…</span>
+    </div>
   </app-root>
+  <style>@keyframes bootstrap-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){#app-bootstrap span:first-child{animation:none}}</style>
 </body>
 </html>

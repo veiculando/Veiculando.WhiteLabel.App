@@ -1,4 +1,4 @@
-export type AccountType = 'pf' | 'pj';
+export type AccountType = 'ad' | 'ag' | 'pf' | 'pj';
 export type KycStatus = 'incomplete' | 'pending' | 'in_review' | 'adjustments_required' | 'approved' | 'rejected' | 'suspended';
 
 export interface SessionResponse {
@@ -25,6 +25,8 @@ export interface InventoryPoint {
   available: boolean;
   imageUrl?: string;
   audience?: number;
+  audienceMatch?: number;
+  recommended?: boolean;
   illuminated?: boolean;
 }
 
@@ -34,18 +36,57 @@ export interface InventorySearch {
   mediaType?: string;
   minPrice?: number;
   maxPrice?: number;
+  periodCode?: string;
+  gender?: number;
+  ageRangeIds?: string;
+  incomeRangeIds?: string;
+  psychographicIds?: string;
+  poiCategoryIds?: string;
+  totalBudget?: number;
+}
+
+export interface InventoryFilters {
+  mediaTypes: string[];
+  cities: Array<{ name: string; state: string }>;
+  periods: Array<{ code: string; name: string; periodicity: string; startDate: string; endDate: string }>;
+  audience: {
+    ageRanges: Array<{ id: number; name: string }>;
+    incomeRanges: Array<{ id: number; name: string }>;
+    psychographicProfiles: Array<{ id: number; name: string }>;
+    poiCategories?: Array<{ id: number; name: string }>;
+  };
 }
 
 export interface CheckoutQuote {
   quoteId: string;
-  items: Array<InventoryPoint & { serverPrice: number }>;
+  items: Array<Pick<InventoryPoint, 'id' | 'code'> & { serverPrice: number }>;
   total: number;
   expiresAt: string;
   prototype?: boolean;
 }
 
+export interface CheckoutPeriod {
+  codigo: string;
+  nome: string;
+  dataInicio: string;
+  dataFim: string;
+}
+
+export interface CheckoutCampaign {
+  id: number;
+  code: string;
+  name: string;
+  periods: CheckoutPeriod[];
+}
+
+export interface CheckoutContext {
+  campaigns: CheckoutCampaign[];
+  clients?: Array<{ id: number; name: string }> | null;
+}
+
 export interface OrderConfirmation {
   orderCode: string;
+  orderCodes?: string[];
   total: number;
   createdAt: string;
   prototype?: boolean;

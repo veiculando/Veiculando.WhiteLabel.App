@@ -6,11 +6,25 @@ import { AccountType, KycStatus } from '../api/app-api.models';
 
 export interface KycSubmission {
   accountType: AccountType;
+  tradeName: string;
   legalName: string;
   document: string;
   phone: string;
+  email?: string;
+  website?: string;
+  street: string;
+  number: string;
+  district: string;
+  complement?: string;
+  zipCode: string;
   city: string;
   state: string;
+  stateTaxId?: string;
+  municipalTaxId?: string;
+  representativeName: string;
+  representativeCpf: string;
+  representativeEmail: string;
+  representativePhone: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -25,8 +39,21 @@ export class KycService {
     return this.http.post<{ status: KycStatus }>(`${environment.bffUrl}/app/kyc`, payload);
   }
   status() {
-    if (environment.usePrototypeFixtures) return of<{ status: KycStatus; updatedAt: string }>({ status: 'pending', updatedAt: new Date().toISOString() });
-    return this.http.get<{ status: KycStatus; updatedAt: string }>(`${environment.bffUrl}/app/kyc/status`);
+    if (environment.usePrototypeFixtures) return of<{ status: KycStatus; updatedAt: string; reason?: string }>({ status: 'pending', updatedAt: new Date().toISOString() });
+    return this.http.get<{ status: KycStatus; updatedAt: string; reason?: string }>(`${environment.bffUrl}/app/kyc/status`);
+  }
+
+  documents() {
+    if (environment.usePrototypeFixtures) return of<Array<{ id: string; name: string; type: string }>>([]);
+    return this.http.get<Array<{ id: string; name: string; type: string }>>(`${environment.bffUrl}/app/kyc/documents`);
+  }
+
+  uploadDocument(type: string, file: File) {
+    if (environment.usePrototypeFixtures) return of({ message: 'Documento recebido.' }).pipe(delay(300));
+    const body = new FormData();
+    body.append('type', type);
+    body.append('file', file);
+    return this.http.post<{ message: string }>(`${environment.bffUrl}/app/kyc/documents`, body);
   }
 
   validateInvitation(token: string) {

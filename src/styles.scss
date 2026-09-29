@@ -1,4 +1,10 @@
 @use 'styles/tokens';
+@use 'app/layout/aurum-shell.component';
+@use 'app/features/inventory/aurum-map.page';
+@use 'app/features/inventory/aurum-piece.page';
+@use 'app/features/checkout/aurum-checkout.page';
+@use 'app/features/checkout/aurum-success.page';
+@use 'app/features/auth/aurum-auth';
 
 *,
 *::before,
