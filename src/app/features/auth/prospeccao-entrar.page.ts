@@ -28,9 +28,8 @@ interface ResgateResposta {
  * estático.
  *
  * **A origem é verificada nos dois sentidos.** Só se aceita mensagem da origem
- * configurada em `environment.prospeccaoOrigemPermitida`, e o aviso de "pronto" só
- * é enviado para ela — `postMessage` com `'*'` entregaria o handshake a qualquer
- * página que tivesse conseguido abrir esta aba.
+ * configurada na lista de origens do runtime, e o aviso de "pronto" só é
+ * enviado para cada origem exata dessa lista — nunca com `'*'`.
  */
 @Component({
   selector: 'app-prospeccao-entrar',
@@ -65,9 +64,11 @@ export class ProspeccaoEntrarPage implements OnInit, OnDestroy {
   private expiracao?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
-    const origemPermitida = environment.prospeccaoOrigemPermitida;
+    const configuredOrigins = window.__VEICULANDO_RUNTIME_CONFIG__?.prospeccaoAllowedOrigins;
+    const origensPermitidas = (Array.isArray(configuredOrigins) ? configuredOrigins : [])
+      .filter((origin): origin is string => typeof origin === 'string' && isExactOrigin(origin));
 
-    if (!window.opener || !origemPermitida) {
+    if (!window.opener || origensPermitidas.length === 0) {
       this.erro.set('Esta página só abre a partir do painel da exibidora.');
       return;
     }
@@ -75,8 +76,10 @@ export class ProspeccaoEntrarPage implements OnInit, OnDestroy {
     this.ouvinte = (evento: MessageEvent) => {
       // Origem verificada antes de olhar o conteúdo: uma mensagem de qualquer
       // outra janela é descartada sem ser lida.
-      if (evento.origin !== origemPermitida) return;
+      if (evento.source !== window.opener || !origensPermitidas.includes(evento.origin)) return;
       if (evento.data?.type !== 'prospeccao-token') return;
+      if (typeof evento.data.token !== 'string' || !evento.data.token ||
+          !Number.isSafeInteger(evento.data.operadorId) || evento.data.operadorId <= 0) return;
 
       this.limpar();
       this.resgatar(evento.data.token, evento.data.operadorId, evento.data.anuncianteId ?? null);
@@ -90,7 +93,9 @@ export class ProspeccaoEntrarPage implements OnInit, OnDestroy {
       if (!this.erro()) this.erro.set('A sessão não foi recebida a tempo.');
     }, 15000);
 
-    window.opener.postMessage({ type: 'prospeccao-pronto' }, origemPermitida);
+    for (const origin of origensPermitidas) {
+      window.opener.postMessage({ type: 'prospeccao-pronto' }, origin);
+    }
   }
 
   ngOnDestroy(): void {
@@ -122,5 +127,14 @@ export class ProspeccaoEntrarPage implements OnInit, OnDestroy {
           this.erro.set(resposta?.error?.message ?? 'Sessão de prospecção inválida ou expirada.');
         },
       });
+  }
+}
+
+function isExactOrigin(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && parsed.origin === value;
+  } catch {
+    return false;
   }
 }

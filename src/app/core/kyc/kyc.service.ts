@@ -32,7 +32,10 @@ export class KycService {
   private readonly http = inject(HttpClient);
   lookupCompany(document: string) {
     if (environment.usePrototypeFixtures) return of({ document, legalName: 'Aurum Comércio e Serviços Ltda.', city: 'São Paulo', state: 'SP', active: true }).pipe(delay(300));
-    return this.http.get<{ document: string; legalName: string; city: string; state: string; active: boolean }>(`${environment.bffUrl}/app/kyc/company/${encodeURIComponent(document)}`);
+    // A barra da máscara (%2F) não é decodificada em parâmetros de rota pelo ASP.NET Core.
+    // Envie somente dígitos para preservar os 14 caracteres validados pelo BFF.
+    const cnpj = document.replace(/\D/g, '');
+    return this.http.get<{ document: string; legalName: string; city: string; state: string; active: boolean }>(`${environment.bffUrl}/app/kyc/company/${cnpj}`);
   }
   submit(payload: KycSubmission) {
     if (environment.usePrototypeFixtures) return of<{ status: KycStatus }>({ status: 'pending' }).pipe(delay(450));
