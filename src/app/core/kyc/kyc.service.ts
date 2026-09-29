@@ -59,6 +59,16 @@ export class KycService {
     return this.http.post<{ message: string }>(`${environment.bffUrl}/app/kyc/documents`, body);
   }
 
+  uploadDocuments(documents: Array<{ type: string; file: File }>) {
+    if (environment.usePrototypeFixtures) return of({ received: documents.map(({ type }) => type) }).pipe(delay(300));
+    const body = new FormData();
+    for (const { type, file } of documents) {
+      body.append('types', type);
+      body.append('files', file, file.name);
+    }
+    return this.http.post<{ received: string[] }>(`${environment.bffUrl}/app/kyc/documents/batch`, body);
+  }
+
   validateInvitation(token: string) {
     if (environment.usePrototypeFixtures) return of({ valid: token.startsWith('preview-') });
     return this.http.get<{ valid: boolean }>(`${environment.bffUrl}/app/invitations/${encodeURIComponent(token)}`);
