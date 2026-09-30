@@ -42,8 +42,8 @@ export class KycService {
     return this.http.post<{ status: KycStatus }>(`${environment.bffUrl}/app/kyc`, payload);
   }
   status() {
-    if (environment.usePrototypeFixtures) return of<{ status: KycStatus; updatedAt: string; reason?: string }>({ status: 'pending', updatedAt: new Date().toISOString() });
-    return this.http.get<{ status: KycStatus; updatedAt: string; reason?: string }>(`${environment.bffUrl}/app/kyc/status`);
+    if (environment.usePrototypeFixtures) return of<{ status: KycStatus; updatedAt: string; step: number; reason?: string }>({ status: 'pending', updatedAt: new Date().toISOString(), step: 4 });
+    return this.http.get<{ status: KycStatus; updatedAt: string; step: number; reason?: string }>(`${environment.bffUrl}/app/kyc/status`);
   }
 
   documents() {

@@ -1,4 +1,4 @@
-import { distanceMeters, supportIcon } from './aurum-map.page';
+import { distanceMeters, recommendationList, supportIcon } from './aurum-map.page';
 
 describe('mapa Aurum', () => {
   it('filtra peças pela distância geográfica ao POI', () => {
@@ -14,5 +14,11 @@ describe('mapa Aurum', () => {
     expect(supportIcon('Relógio urbano')).toBe('icon_relogio-rua.png');
     expect(supportIcon('Outdoor premium')).toBe('icon_outdoor-special.png');
     expect(supportIcon('Empena')).toBe('icon_empena.png');
+  });
+
+  it('mostra somente recomendadas na lista sem remover as outras do mapa até ativar o botão', () => {
+    const points = [{ id: 1, recommended: true }, { id: 2, recommended: false }];
+    expect(recommendationList(points as never, true).map(point => point.id)).toEqual([1]);
+    expect(recommendationList(points as never, false).map(point => point.id)).toEqual([1, 2]);
   });
 });
