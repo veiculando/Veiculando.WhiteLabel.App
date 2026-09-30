@@ -24,6 +24,15 @@ export interface InventoryPoint {
   price: number;
   available: boolean;
   imageUrl?: string;
+  rating?: number | null;
+  ratingCount?: number;
+  cpm?: number | null;
+  tablePrice?: number;
+  periodicity?: string;
+  viewAngle?: number | null;
+  permit?: boolean | null;
+  trafficLight?: boolean | null;
+  road?: { lanes?: number | null; speed?: number | null; pedestrians?: string | null } | null;
   audience?: number;
   audienceMatch?: number;
   recommended?: boolean;

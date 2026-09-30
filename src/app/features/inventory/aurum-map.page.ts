@@ -43,6 +43,10 @@ export function supportIcon(mediaType: string): string {
   return 'icon_indefinido.png';
 }
 
+export function recommendationList(points: InventoryPoint[], onlyRecommended: boolean): InventoryPoint[] {
+  return onlyRecommended ? points.filter(point => point.recommended) : points;
+}
+
 @Component({
   imports: [CurrencyPipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,7 +81,7 @@ export function supportIcon(mediaType: string): string {
             @case ('where') { <h2>Onde anunciar?</h2><label for="map-city">Cidade</label><input id="map-city" list="map-cities" [value]="city()" (input)="city.set($any($event.target).value)" placeholder="Todas as cidades" /><datalist id="map-cities">@for(item of cities();track item.name+'/'+item.state){<option [value]="item.name">{{item.state}}</option>}</datalist><label for="map-query">Bairro, avenida ou local</label><input id="map-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Ex.: Avenida Paulista" /><p>A busca encontra locais e peças no inventário desta exibidora.</p> }
             @case ('when') { <h2>Quando</h2><p class="field-label">Periodicidade</p><div class="period-options">@for (period of ['Semanal','Bissemanal','Mensal']; track period) { <button type="button" [class.selected]="periodicity()===period" (click)="choosePeriodicity(period)">{{period}}</button> }</div><div class="period-list" role="radiogroup" aria-label="Período de veiculação">@for(period of visiblePeriods();track period.code){<label><input type="radio" name="map-period" [checked]="campaignSelection.periodCode()===period.code" (change)="campaignSelection.periodCode.set(period.code)" />{{period.name}}</label>}@if(!visiblePeriods().length){<p>Não há períodos futuros para esta periodicidade.</p>}</div><p>Selecione um período. Preço e disponibilidade serão confirmados na cotação.</p> }
             @case ('audience') { <h2>Público</h2><p>Priorize pontos com o perfil desejado, como na busca do Veiculando.</p><p class="field-label">Gênero</p><div class="audience-options"><label><input type="radio" name="audience-gender" [checked]="gender()===0" (change)="gender.set(0)" />Todos</label><label><input type="radio" name="audience-gender" [checked]="gender()===1" (change)="gender.set(1)" />Masculino</label><label><input type="radio" name="audience-gender" [checked]="gender()===2" (change)="gender.set(2)" />Feminino</label></div><p class="field-label">Faixa etária</p><div class="audience-options">@for(option of ageRanges();track option.id){<label><input type="checkbox" [checked]="ageRangeIds().includes(option.id)" (change)="toggleAudienceOption('age',option.id)" />{{option.name}}</label>}</div><p class="field-label">Faixa de renda</p><div class="audience-options">@for(option of incomeRanges();track option.id){<label><input type="checkbox" [checked]="incomeRangeIds().includes(option.id)" (change)="toggleAudienceOption('income',option.id)" />{{option.name}}</label>}</div><p class="field-label">Perfil psicográfico</p><div class="audience-options">@for(option of psychographicProfiles();track option.id){<label><input type="checkbox" [checked]="psychographicIds().includes(option.id)" (change)="toggleAudienceOption('profile',option.id)" />{{option.name}}</label>}</div> }
-            @case ('investment') { <h2>Investimento</h2><p>Encontre peças pelo valor de referência.</p><div class="investment-range"><label for="map-min-price">Valor mínimo <span>R$</span><input id="map-min-price" type="number" inputmode="decimal" min="0" step="100" placeholder="Sem mínimo" [value]="minPrice() ?? ''" (input)="setPriceBound('min',$any($event.target).value)" /></label><span class="investment-range__divider" aria-hidden="true">até</span><label for="map-max-price">Valor máximo <span>R$</span><input id="map-max-price" type="number" inputmode="decimal" min="0" step="100" placeholder="Sem máximo" [value]="maxPrice() ?? ''" (input)="setPriceBound('max',$any($event.target).value)" /></label></div>@if(investmentError()){<p class="investment-error" role="alert">{{investmentError()}}</p>}<p>O preço final e a disponibilidade serão confirmados na cotação.</p> }
+            @case ('investment') { <h2>Investimento</h2><p>Encontre peças pelo valor de referência.</p><div class="investment-range"><label for="map-min-price">Valor mínimo <span>R$</span><input id="map-min-price" type="number" inputmode="decimal" min="0" step="100" placeholder="Sem mínimo" [value]="minPrice() ?? ''" (input)="setPriceBound('min',$any($event.target).value)" /></label><span class="investment-range__divider" aria-hidden="true">até</span><label for="map-max-price">Valor máximo <span>R$</span><input id="map-max-price" type="number" inputmode="decimal" min="0" step="100" placeholder="Sem máximo" [value]="maxPrice() ?? ''" (input)="setPriceBound('max',$any($event.target).value)" /></label></div><label for="map-total-budget">Verba total para recomendação</label><input id="map-total-budget" type="number" inputmode="decimal" min="1" step="100" placeholder="Sugestão automática" [value]="totalBudget() ?? ''" (input)="setTotalBudget($any($event.target).value)" />@if(investmentError()){<p class="investment-error" role="alert">{{investmentError()}}</p>}<p>O preço final e a disponibilidade serão confirmados na cotação.</p> }
           }
           @if(activePanel!=='campaign'){<div class="popover-actions"><button type="button" (click)="clearActivePanel()">Limpar</button><button type="button" (click)="applyPanel()" [disabled]="activePanel==='investment' && !!investmentError()">Aplicar</button></div>}
         </div>
@@ -85,11 +89,13 @@ export function supportIcon(mediaType: string): string {
 
       <div class="map-workspace">
         <aside class="map-results" [class.sheet-expanded]="sheetExpanded()" aria-label="Pontos encontrados">
-          <div class="map-results__heading"><span>Inventário</span><strong>{{points().length}} {{points().length===1?'ponto encontrado':'pontos encontrados'}}</strong><button type="button" class="sheet-toggle" (click)="sheetExpanded.update(value=>!value)">{{sheetExpanded()?'Ver mapa':'Ver lista'}}</button></div>
+          <div class="map-results__heading"><span>Peças recomendadas</span><strong>{{recommendedPoints().length}} de {{points().length}} pontos</strong><button type="button" class="sheet-toggle" (click)="sheetExpanded.update(value=>!value)">{{sheetExpanded()?'Ver mapa':'Ver lista'}}</button></div>
+          <div class="recommendation-tabs" role="group" aria-label="Exibição da lista"><button type="button" [class.active]="listMode()==='recommended'" [attr.aria-pressed]="listMode()==='recommended'" (click)="setListMode('recommended')">Recomendadas</button><button type="button" [class.active]="listMode()==='all'" [attr.aria-pressed]="listMode()==='all'" (click)="setListMode('all')">Todas as peças</button></div>
           @if(sheetExpanded()) { <form class="mobile-filters" (submit)="search($event)"><label for="mobile-inventory-query">Buscar local</label><div><input id="mobile-inventory-query" type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="Cidade, bairro ou avenida" /><button type="submit">Buscar</button></div><div class="mobile-filter-actions"><button type="button" (click)="togglePanel('campaign')">{{selectedCampaign()?.name || 'Campanha'}}</button><button type="button" (click)="filtersOpen.set(true)">Mais filtros ☷</button></div></form> }
           @if (loading()) { <p class="map-feedback" role="status">Buscando pontos…</p> }
           @else if (error()) { <p class="map-feedback" role="alert">{{error()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
           @else if (!points().length) { <p class="map-feedback">Nenhum ponto corresponde à busca. Ajuste os filtros.</p> }
+          @else if (!listPoints().length) { <p class="map-feedback">Nenhuma peça atende aos critérios de recomendação. Ajuste a verba ou o público, ou veja todas as peças.</p> }
           @else {
             @if (poiError()) { <p class="map-feedback" role="alert">{{poiError()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
             <div class="map-results__list">
@@ -106,7 +112,7 @@ export function supportIcon(mediaType: string): string {
           @if (pageCount() > 1) {
             <nav class="map-results__pagination" aria-label="Páginas do inventário">
               <button type="button" aria-label="Página anterior" [disabled]="page() === 1" (click)="setPage(page() - 1)">‹</button>
-              <span>{{pageStart()}}–{{pageEnd()}} de {{points().length}}</span>
+              <span>{{pageStart()}}–{{pageEnd()}} de {{listPoints().length}}</span>
               <button type="button" aria-label="Próxima página" [disabled]="page() === pageCount()" (click)="setPage(page() + 1)">›</button>
             </nav>
           }
@@ -118,6 +124,7 @@ export function supportIcon(mediaType: string): string {
           @if (mapLoading()) { <div class="map-state" role="status">Carregando mapa…</div> }
           @if (mapError()) { <div class="map-state map-state--error" role="alert"><strong>Mapa indisponível</strong><span>{{mapError()}}</span></div> }
           @if (poiPlaces().length) { <div class="map-state map-state--poi" role="status">{{poiPlaces().length}} {{poiPlaces().length===1?'local de interesse destacado':'locais de interesse destacados'}} · peças até 5 km</div> }
+          @if(recommendedPoints().length){<button class="map-recommendation-toggle" type="button" [attr.aria-pressed]="showRecommendedOnly()" (click)="toggleRecommendedOnMap()">{{showRecommendedOnly()?'Mostrar todos os locais':'Mostrar somente recomendados'}}</button>}
           @if (selected(); as point) {
             <div class="map-popup" role="dialog" [attr.aria-label]="'Detalhes de '+point.name">
               <button class="map-popup__close" type="button" aria-label="Fechar detalhes" (click)="selectedId.set(null)">×</button>
@@ -151,12 +158,17 @@ export class AurumMapPage implements AfterViewInit {
   private requestVersion = 0;
   private viewReady = false;
   readonly points = signal<InventoryPoint[]>([]);
+  readonly recommendedPoints = computed(() => recommendationList(this.points(), true));
+  readonly listMode = signal<'recommended' | 'all'>('recommended');
+  readonly showRecommendedOnly = signal(false);
+  readonly listPoints = computed(() => recommendationList(this.points(), this.listMode() === 'recommended'));
+  readonly mapPoints = computed(() => recommendationList(this.points(), this.showRecommendedOnly()));
   readonly pageSize = 10;
   readonly page = signal(1);
-  readonly pageCount = computed(() => pageCount(this.points().length, this.pageSize));
+  readonly pageCount = computed(() => pageCount(this.listPoints().length, this.pageSize));
   readonly pageStart = computed(() => (this.page() - 1) * this.pageSize + 1);
-  readonly pageEnd = computed(() => Math.min(this.page() * this.pageSize, this.points().length));
-  readonly visiblePoints = computed(() => pageItems(this.points(), this.page(), this.pageSize));
+  readonly pageEnd = computed(() => Math.min(this.page() * this.pageSize, this.listPoints().length));
+  readonly visiblePoints = computed(() => pageItems(this.listPoints(), this.page(), this.pageSize));
   readonly mediaTypes = signal<string[]>([]);
   readonly cities = signal<Array<{name:string;state:string}>>([]);
   readonly city = signal('');
@@ -193,6 +205,7 @@ export class AurumMapPage implements AfterViewInit {
   readonly query = signal('');
   readonly minPrice = signal<number | null>(null);
   readonly maxPrice = signal<number | null>(null);
+  readonly totalBudget = signal<number | null>(null);
   readonly investmentLabel = computed(() => {
     const min = this.minPrice(), max = this.maxPrice();
     const money = (value: number) => `R$ ${value.toLocaleString('pt-BR')}`;
@@ -222,11 +235,14 @@ export class AurumMapPage implements AfterViewInit {
   ngAfterViewInit() { this.viewReady = true; void this.renderMap(); }
   @HostListener('document:keydown.escape') onEscape() { this.panel.set(null); this.filtersOpen.set(false); this.selectedId.set(null); }
   togglePanel(value: Exclude<FilterPanel, null>) { this.filtersOpen.set(false); this.panel.update(current => current === value ? null : value); }
-  clearActivePanel() { if(this.panel()==='where'){this.query.set('');this.city.set('');} if(this.panel()==='when') this.campaignSelection.periodCode.set(''); if(this.panel()==='audience'){this.gender.set(0);this.ageRangeIds.set([]);this.incomeRangeIds.set([]);this.psychographicIds.set([]);} if(this.panel()==='investment'){this.minPrice.set(null);this.maxPrice.set(null);} this.panel.set(null); this.load(); }
+  clearActivePanel() { if(this.panel()==='where'){this.query.set('');this.city.set('');} if(this.panel()==='when') this.campaignSelection.periodCode.set(''); if(this.panel()==='audience'){this.gender.set(0);this.ageRangeIds.set([]);this.incomeRangeIds.set([]);this.psychographicIds.set([]);} if(this.panel()==='investment'){this.minPrice.set(null);this.maxPrice.set(null);this.totalBudget.set(null);} this.panel.set(null); this.load(); }
   applyPanel() { if(this.panel()==='investment' && this.investmentError()) return; this.panel.set(null); this.load(); }
   setPriceBound(bound: 'min'|'max', raw: string) { const parsed=raw.trim()===''?null:Number(raw); const value=parsed===null||!Number.isFinite(parsed)?null:Math.max(0,parsed); (bound==='min'?this.minPrice:this.maxPrice).set(value); }
+  setTotalBudget(raw: string) { const value = Number(raw); this.totalBudget.set(raw.trim() && Number.isFinite(value) && value > 0 ? value : null); }
   search(event: Event) { event.preventDefault(); this.panel.set(null); this.load(); }
-  setPage(page: number) { this.page.set(clampPage(page, this.points().length, this.pageSize)); }
+  setPage(page: number) { this.page.set(clampPage(page, this.listPoints().length, this.pageSize)); }
+  setListMode(mode: 'recommended' | 'all') { this.listMode.set(mode); this.page.set(1); }
+  toggleRecommendedOnMap() { this.showRecommendedOnly.update(value => !value); void this.renderMap(); }
   toggleMedia(type: string) { this.selectedMediaTypes.update(current => current.includes(type) ? current.filter(value => value!==type) : [...current,type]); }
   togglePoiCategory(id: number) { this.poiCategoryIds.update(current => current.includes(id) ? current.filter(value => value!==id) : [...current,id]); }
   choosePeriodicity(period: string) { this.periodicity.set(period); this.campaignSelection.periodCode.set(''); }
@@ -249,11 +265,11 @@ export class AurumMapPage implements AfterViewInit {
   }
   addToCart(point: InventoryPoint) { this.cart.add(point); this.cartDrawer.open.set(true); }
   highlight(id: number) { this.highlightedId.set(id); this.updatePieceIcons(); }
-  select(id: number) { this.selectedId.set(id); this.updatePieceIcons(); this.sheetExpanded.set(false); const index=this.points().findIndex(item=>item.id===id); if(index>=0) this.page.set(Math.floor(index/this.pageSize)+1); const point=this.points()[index]; if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);} }
+  select(id: number) { this.selectedId.set(id); this.updatePieceIcons(); this.sheetExpanded.set(false); if(!this.listPoints().some(point=>point.id===id)) this.listMode.set('all'); const index=this.listPoints().findIndex(item=>item.id===id); if(index>=0) this.page.set(Math.floor(index/this.pageSize)+1); const point=this.points().find(item=>item.id===id); if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);setTimeout(()=>{if(this.selectedId()===id){const width=this.mapCanvas?.nativeElement.clientWidth??0;this.map.panBy(width>760?Math.min(200,width*.19):0,width>760?-65:145);}},120);} }
   load() {
     const version = ++this.requestVersion;
     this.loading.set(true); this.error.set(''); this.poiError.set('');
-    this.inventory.search({query:this.query(),city:this.city(),minPrice:this.minPrice()??undefined,maxPrice:this.maxPrice()??undefined,periodCode:this.campaignSelection.periodCode()||undefined,gender:this.gender()||undefined,ageRangeIds:this.ageRangeIds().join(','),incomeRangeIds:this.incomeRangeIds().join(','),psychographicIds:this.psychographicIds().join(','),poiCategoryIds:this.poiCategoryIds().join(',')}).subscribe({
+    this.inventory.search({query:this.query(),city:this.city(),minPrice:this.minPrice()??undefined,maxPrice:this.maxPrice()??undefined,totalBudget:this.totalBudget()??undefined,periodCode:this.campaignSelection.periodCode()||undefined,gender:this.gender()||undefined,ageRangeIds:this.ageRangeIds().join(','),incomeRangeIds:this.incomeRangeIds().join(','),psychographicIds:this.psychographicIds().join(','),poiCategoryIds:this.poiCategoryIds().join(',')}).subscribe({
       next: all => { void this.applyResults(all, version); },
       error:()=>{if(version===this.requestVersion){this.error.set('Não foi possível carregar o inventário.');this.loading.set(false);}},
     });
@@ -277,6 +293,8 @@ export class AurumMapPage implements AfterViewInit {
     } else this.poiPlaces.set([]);
     if (version !== this.requestVersion) return;
     this.points.set(points);
+    this.showRecommendedOnly.set(false);
+    this.listMode.set('recommended');
     this.page.set(1);
     if (this.selectedId() && !points.some(point => point.id === this.selectedId())) this.selectedId.set(null);
     void this.renderMap();
@@ -321,9 +339,9 @@ export class AurumMapPage implements AfterViewInit {
       this.markers.forEach(marker=>marker.setMap(null));this.markers=[];this.markersById.clear();
       this.poiMarkers.forEach(marker=>marker.setMap(null));this.poiMarkers=[];
       const bounds=new this.maps.LatLngBounds();
-      this.points().forEach(point=>{
+      this.mapPoints().forEach(point=>{
         if(!Number.isFinite(point.latitude)||!Number.isFinite(point.longitude))return;
-        const marker=new this.maps.Marker({map:this.map,position:{lat:point.latitude,lng:point.longitude},title:point.name,icon:this.pieceIcon(point),opacity:point.recommended ? 1 : 0.9});
+        const marker=new this.maps.Marker({map:this.map,position:{lat:point.latitude,lng:point.longitude},title:point.name,icon:this.pieceIcon(point),opacity:point.recommended ? 1 : 0.5,zIndex:point.recommended ? 200 : 100});
         marker.addListener('click',()=>this.select(point.id));this.markers.push(marker);this.markersById.set(point.id,marker);bounds.extend(marker.getPosition());
       });
       for(const place of this.poiPlaces()) {
