@@ -49,4 +49,16 @@ describe('KycService', () => {
     service.documents().subscribe(documents => expect(documents[0].type).toBe('corporate'));
     http.expectOne('/api/wl/app/kyc/documents').flush([{ id: '1', name: 'contrato.pdf', type: 'corporate' }]);
   });
+
+  it('envia os documentos selecionados em uma única chamada multipart', () => {
+    const corporate = new File(['%PDF-1.4'], 'contrato.pdf', { type: 'application/pdf' });
+    const representative = new File(['%PDF-1.4'], 'identidade.pdf', { type: 'application/pdf' });
+    service.uploadDocuments([{ type: 'corporate', file: corporate }, { type: 'representative', file: representative }]).subscribe();
+    const request = http.expectOne('/api/wl/app/kyc/documents/batch');
+    expect(request.request.method).toBe('POST');
+    const body = request.request.body as FormData;
+    expect(body.getAll('types')).toEqual(['corporate', 'representative']);
+    expect(body.getAll('files')).toEqual([corporate, representative]);
+    request.flush({ received: ['corporate', 'representative'] });
+  });
 });

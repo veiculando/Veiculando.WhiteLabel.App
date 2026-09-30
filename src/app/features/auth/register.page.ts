@@ -4,14 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AdvertiserAuthService, RegistrationPolicy } from '../../core/auth/advertiser-auth.service';
-
-export function formatBrazilianPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 11);
-  const area = digits.slice(0, 2);
-  const local = digits.slice(2);
-  const splitAt = digits.length > 10 ? 5 : 4;
-  return !digits ? '' : digits.length <= 2 ? `(${area}` : `(${area}) ${local.slice(0, splitAt)}${local.length > splitAt ? `-${local.slice(splitAt)}` : ''}`;
-}
+import { formatBrazilianPhone } from '../../core/forms/brazilian-fields';
+export { formatBrazilianPhone } from '../../core/forms/brazilian-fields';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],

@@ -9,6 +9,7 @@ import { CartDrawerService } from '../../core/cart/cart-drawer.service';
 import { CampaignSelectionService } from '../../core/checkout/campaign-selection.service';
 import { CheckoutService } from '../../core/checkout/checkout.service';
 import { InventoryService } from '../../core/inventory/inventory.service';
+import { clampPage, pageCount, pageItems } from '../../core/inventory/pagination';
 import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.service';
 
 type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | null;
@@ -89,9 +90,10 @@ export function supportIcon(mediaType: string): string {
           @if (loading()) { <p class="map-feedback" role="status">Buscando pontos…</p> }
           @else if (error()) { <p class="map-feedback" role="alert">{{error()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
           @else if (!points().length) { <p class="map-feedback">Nenhum ponto corresponde à busca. Ajuste os filtros.</p> }
-          @if (poiError()) { <p class="map-feedback" role="alert">{{poiError()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
-          @else { <div class="map-results__list">
-            @for (point of points(); track point.id) {
+          @else {
+            @if (poiError()) { <p class="map-feedback" role="alert">{{poiError()}} <button type="button" (click)="load()">Tentar novamente</button></p> }
+            <div class="map-results__list">
+            @for (point of visiblePoints(); track point.id) {
               <article class="map-card" [class.selected]="selectedId()===point.id" (mouseenter)="highlight(point.id)" (mouseleave)="highlightedId.set(null)">
                 <button class="map-card__media" type="button" (click)="select(point.id)" [attr.aria-label]="'Selecionar '+point.name">
                   @if (point.imageUrl) { <img [src]="point.imageUrl" [alt]="point.name" /> } @else { <span>Foto da peça</span> }
@@ -100,7 +102,15 @@ export function supportIcon(mediaType: string): string {
                 <div class="map-card__content"><h2>{{point.name}}</h2>@if(point.recommended){<span class="recommendation-chip">Recomendado para sua verba</span>}<p>⌖ {{point.address}}</p><div class="map-card__price"><span>Valor de referência</span><strong>{{point.price | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong></div><button type="button" (click)="select(point.id)">Ver ponto →</button></div>
               </article>
             }
-          </div> }
+            </div>
+          @if (pageCount() > 1) {
+            <nav class="map-results__pagination" aria-label="Páginas do inventário">
+              <button type="button" aria-label="Página anterior" [disabled]="page() === 1" (click)="setPage(page() - 1)">‹</button>
+              <span>{{pageStart()}}–{{pageEnd()}} de {{points().length}}</span>
+              <button type="button" aria-label="Próxima página" [disabled]="page() === pageCount()" (click)="setPage(page() + 1)">›</button>
+            </nav>
+          }
+          }
         </aside>
         <section class="map-canvas" aria-label="Mapa do inventário">
           <button class="mobile-map-search" type="button" (click)="sheetExpanded.set(true)"><strong>{{query() || 'Buscar peças'}}</strong><small>{{points().length}} {{points().length===1?'ponto encontrado':'pontos encontrados'}} · abrir lista</small></button>
@@ -141,6 +151,12 @@ export class AurumMapPage implements AfterViewInit {
   private requestVersion = 0;
   private viewReady = false;
   readonly points = signal<InventoryPoint[]>([]);
+  readonly pageSize = 10;
+  readonly page = signal(1);
+  readonly pageCount = computed(() => pageCount(this.points().length, this.pageSize));
+  readonly pageStart = computed(() => (this.page() - 1) * this.pageSize + 1);
+  readonly pageEnd = computed(() => Math.min(this.page() * this.pageSize, this.points().length));
+  readonly visiblePoints = computed(() => pageItems(this.points(), this.page(), this.pageSize));
   readonly mediaTypes = signal<string[]>([]);
   readonly cities = signal<Array<{name:string;state:string}>>([]);
   readonly city = signal('');
@@ -210,6 +226,7 @@ export class AurumMapPage implements AfterViewInit {
   applyPanel() { if(this.panel()==='investment' && this.investmentError()) return; this.panel.set(null); this.load(); }
   setPriceBound(bound: 'min'|'max', raw: string) { const parsed=raw.trim()===''?null:Number(raw); const value=parsed===null||!Number.isFinite(parsed)?null:Math.max(0,parsed); (bound==='min'?this.minPrice:this.maxPrice).set(value); }
   search(event: Event) { event.preventDefault(); this.panel.set(null); this.load(); }
+  setPage(page: number) { this.page.set(clampPage(page, this.points().length, this.pageSize)); }
   toggleMedia(type: string) { this.selectedMediaTypes.update(current => current.includes(type) ? current.filter(value => value!==type) : [...current,type]); }
   togglePoiCategory(id: number) { this.poiCategoryIds.update(current => current.includes(id) ? current.filter(value => value!==id) : [...current,id]); }
   choosePeriodicity(period: string) { this.periodicity.set(period); this.campaignSelection.periodCode.set(''); }
@@ -232,7 +249,7 @@ export class AurumMapPage implements AfterViewInit {
   }
   addToCart(point: InventoryPoint) { this.cart.add(point); this.cartDrawer.open.set(true); }
   highlight(id: number) { this.highlightedId.set(id); this.updatePieceIcons(); }
-  select(id: number) { this.selectedId.set(id); this.updatePieceIcons(); this.sheetExpanded.set(false); const point=this.points().find(item=>item.id===id); if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);} }
+  select(id: number) { this.selectedId.set(id); this.updatePieceIcons(); this.sheetExpanded.set(false); const index=this.points().findIndex(item=>item.id===id); if(index>=0) this.page.set(Math.floor(index/this.pageSize)+1); const point=this.points()[index]; if(point&&this.map){this.map.panTo({lat:point.latitude,lng:point.longitude});this.map.setZoom(15);} }
   load() {
     const version = ++this.requestVersion;
     this.loading.set(true); this.error.set(''); this.poiError.set('');
@@ -260,6 +277,7 @@ export class AurumMapPage implements AfterViewInit {
     } else this.poiPlaces.set([]);
     if (version !== this.requestVersion) return;
     this.points.set(points);
+    this.page.set(1);
     if (this.selectedId() && !points.some(point => point.id === this.selectedId())) this.selectedId.set(null);
     void this.renderMap();
     this.loading.set(false);

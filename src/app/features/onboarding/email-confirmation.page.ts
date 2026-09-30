@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, interval } from 'rxjs';
 import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
+import { onlyDigits } from '../../core/forms/brazilian-fields';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -15,7 +16,7 @@ import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
     @if(deliveryFailed){<p role="alert">O envio inicial falhou. Aguarde um minuto e use “Reenviar código”.</p>}
     <form [formGroup]="form" (ngSubmit)="confirm()">
       <label>E-mail<input type="email" formControlName="email" autocomplete="email" /></label>
-      <label>Código de confirmação<input formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" /></label>
+      <label>Código de confirmação<input formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" (input)="formatCode($event)" /></label>
       <button class="primary" [disabled]="form.invalid || loading()">{{loading()?'Confirmando…':'Confirmar e-mail'}}</button>
     </form>
     @if(error()){<p role="alert">{{error()}}</p>}
@@ -40,6 +41,7 @@ export class EmailConfirmationPage {
   readonly message = signal('');
   readonly cooldown = signal(this.deliveryFailed ? 60 : 0);
   constructor() { interval(1000).pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(() => this.cooldown.update(v => Math.max(0, v - 1))); }
+  formatCode(event: Event) { this.form.controls.code.setValue(onlyDigits((event.target as HTMLInputElement).value).slice(0, 6)); }
   confirm() {
     if (this.form.invalid || this.loading()) return;
     this.loading.set(true); this.error.set('');
