@@ -17,10 +17,10 @@ import { CartDrawerService } from '../core/cart/cart-drawer.service';
       </a>
       <nav id="mobile-navigation" [class.is-open]="menuOpen()" aria-label="Navegação principal">
         <a routerLink="/mapa" routerLinkActive="is-active" (click)="closePanels()">Início</a>
+        @if (auth.user()) { <a routerLink="/anunciante/campanhas" routerLinkActive="is-active" (click)="closePanels()">Campanhas</a> }
         <a href="mailto:suporte@veiculando.com.br">Suporte</a>
       </nav>
       <div class="topbar__actions">
-        <!-- Minhas Campanhas pertence à sprint 11.5; não publicar CTA sem rota. -->
         <button class="cart-button" type="button" [attr.aria-label]="'Abrir carrinho com ' + cart.count() + ' itens'" [attr.aria-expanded]="cartOpen()" (click)="toggleCart()"><span class="cart-icon" aria-hidden="true">▱</span><span class="cart-label">Carrinho</span><b>{{ cart.count() }}</b></button>
         @if (auth.user()) { <button type="button" class="profile-button" aria-label="Abrir meu perfil" [attr.aria-expanded]="profileOpen()" (click)="toggleProfile()">●</button> }
         @else { <a class="profile-button profile-button--guest" routerLink="/login">Entrar</a> }
