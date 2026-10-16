@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/auth.guard';
 import { AuthLayoutComponent } from './layout/auth-layout.component';
 import { AppShellComponent } from './layout/aurum-shell.component';
 
@@ -30,6 +31,8 @@ export const routes: Routes = [
       // VEI-RD-157e: carteira da vendedora na Prospecção; o BFF recusa fora dela.
       { path: 'meus-clientes', loadComponent: () => import('./features/carteira/meus-clientes.page').then(m => m.MeusClientesPage) },
       { path: 'pedidos/sucesso', loadComponent: () => import('./features/checkout/aurum-success.page').then(m => m.AurumSuccessPage) },
+      { path: 'anunciante/campanhas', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/campaigns.page').then(m => m.CampaignsPage) },
+      { path: 'anunciante/campanhas/campanha/:codigo', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/campaign-detail.page').then(m => m.CampaignDetailPage) },
     ],
   },
   { path: '**', redirectTo: 'mapa' },

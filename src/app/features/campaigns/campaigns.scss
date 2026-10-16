@@ -1,0 +1,13 @@
+.campaigns, .detail { padding: 24px; color: var(--charcoal); }
+.campaigns__bar, .advertiser, .detail__head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.badge { border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+.campaigns__error { color: var(--danger); }
+.money, .counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.money p, .counts p { background: var(--white); border-radius: 12px; padding: 12px; }
+.money--grafite strong { color: var(--charcoal); }
+.money--verde strong { color: var(--success); }
+.money--vinho strong { color: var(--danger); }
+.money--dourado { background: var(--paper-bg); }
+.money--dourado strong { color: var(--warning); }
+button.is-active { font-weight: 700; }
+@media (max-width: 800px) { .money, .counts { grid-template-columns: 1fr 1fr; } }
