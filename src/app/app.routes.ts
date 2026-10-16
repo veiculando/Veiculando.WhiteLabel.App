@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/auth.guard';
 import { AuthLayoutComponent } from './layout/auth-layout.component';
 import { AppShellComponent } from './layout/aurum-shell.component';
 
@@ -28,6 +29,8 @@ export const routes: Routes = [
       { path: 'pecas/:codigo', loadComponent: () => import('./features/inventory/aurum-piece.page').then(m => m.AurumPiecePage) },
       { path: 'checkout', loadComponent: () => import('./features/checkout/aurum-checkout.page').then(m => m.AurumCheckoutPage) },
       { path: 'pedidos/sucesso', loadComponent: () => import('./features/checkout/aurum-success.page').then(m => m.AurumSuccessPage) },
+      { path: 'anunciante/campanhas', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/campaigns.page').then(m => m.CampaignsPage) },
+      { path: 'anunciante/campanhas/campanha/:codigo', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/campaign-detail.page').then(m => m.CampaignDetailPage) },
     ],
   },
   { path: '**', redirectTo: 'mapa' },
