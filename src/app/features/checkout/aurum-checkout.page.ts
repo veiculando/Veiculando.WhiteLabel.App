@@ -7,6 +7,7 @@ import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 import { CartService } from '../../core/cart/cart.service';
 import { CampaignSelectionService } from '../../core/checkout/campaign-selection.service';
 import { CheckoutService } from '../../core/checkout/checkout.service';
+import { FotosIndisponiveis } from '../../core/inventory/fotos-indisponiveis';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -28,7 +29,7 @@ import { environment } from '../../../environments/environment';
           <div class="checkout-drawer__scroll">
             @for(group of groups();track group.city){
               <section class="city-group"><header><h2>⌖ &nbsp; {{group.city | uppercase}}</h2><p>{{group.items.length}} {{group.items.length===1?'peça':'peças'}} <strong>{{group.subtotal | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong></p></header>
-              @for(item of group.items;track item.id){<article class="checkout-row"><div class="checkout-row__media">@if(item.imageUrl){<img [src]="item.imageUrl" [alt]="item.name" />}@else{<span>{{item.mediaType.slice(0,2).toUpperCase()}}</span>}</div><div class="checkout-row__main"><span class="media-chip">{{item.mediaType}}</span><small>{{item.code}}</small><a [routerLink]="['/pecas',item.code]">{{item.name}}</a><p>{{item.address}}</p></div><div class="checkout-row__actions"><strong>{{item.price | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong><button type="button" (click)="remove(item.id)">Remover</button></div></article>}
+              @for(item of group.items;track item.id){<article class="checkout-row"><div class="checkout-row__media">@if(item.imageUrl && !fotos.tem(item.id)){<img [src]="item.imageUrl" [alt]="item.name" (error)="fotos.marcar(item.id)" />}@else{<span>{{item.mediaType.slice(0,2).toUpperCase()}}</span>}</div><div class="checkout-row__main"><span class="media-chip">{{item.mediaType}}</span><small>{{item.code}}</small><a [routerLink]="['/pecas',item.code]">{{item.name}}</a><p>{{item.address}}</p></div><div class="checkout-row__actions"><strong>{{item.price | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong><button type="button" (click)="remove(item.id)">Remover</button></div></article>}
               </section>
             }
           </div>
@@ -44,6 +45,7 @@ import { environment } from '../../../environments/environment';
   `,
 })
 export class AurumCheckoutPage {
+  readonly fotos=new FotosIndisponiveis();
   readonly cart=inject(CartService);
   private readonly checkout=inject(CheckoutService);
   private readonly campaignSelection=inject(CampaignSelectionService);

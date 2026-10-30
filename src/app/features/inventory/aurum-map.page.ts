@@ -9,6 +9,7 @@ import { CartDrawerService } from '../../core/cart/cart-drawer.service';
 import { CampaignSelectionService } from '../../core/checkout/campaign-selection.service';
 import { CheckoutService } from '../../core/checkout/checkout.service';
 import { InventoryService } from '../../core/inventory/inventory.service';
+import { FotosIndisponiveis } from '../../core/inventory/fotos-indisponiveis';
 import { clampPage, pageCount, pageItems } from '../../core/inventory/pagination';
 import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.service';
 
@@ -102,7 +103,7 @@ export function recommendationList(points: InventoryPoint[], onlyRecommended: bo
             @for (point of visiblePoints(); track point.id) {
               <article class="map-card" [class.selected]="selectedId()===point.id" (mouseenter)="highlight(point.id)" (mouseleave)="highlightedId.set(null)">
                 <button class="map-card__media" type="button" (click)="select(point.id)" [attr.aria-label]="'Selecionar '+point.name">
-                  @if (point.imageUrl) { <img [src]="point.imageUrl" [alt]="point.name" /> } @else { <span>Foto da peça</span> }
+                  @if (point.imageUrl && !fotos.tem(point.id)) { <img [src]="point.imageUrl" [alt]="point.name" (error)="fotos.marcar(point.id)" /> } @else { <span>Foto da peça</span> }
                   <b>{{point.mediaType || 'Mídia exterior'}}</b>
                 </button>
                 <div class="map-card__content"><h2>{{point.name}}</h2>@if(point.recommended){<span class="recommendation-chip">Recomendado para sua verba</span>}<p>⌖ {{point.address}}</p><div class="map-card__price"><span>Valor de referência</span><strong>{{point.price | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong></div><button type="button" (click)="select(point.id)">Ver ponto →</button></div>
@@ -128,7 +129,7 @@ export function recommendationList(points: InventoryPoint[], onlyRecommended: bo
           @if (selected(); as point) {
             <div class="map-popup" role="dialog" [attr.aria-label]="'Detalhes de '+point.name">
               <button class="map-popup__close" type="button" aria-label="Fechar detalhes" (click)="selectedId.set(null)">×</button>
-              <div class="map-popup__media">@if(point.imageUrl){<img [src]="point.imageUrl" [alt]="point.name" />}@else{<span>Foto da peça indisponível</span>}</div>
+              <div class="map-popup__media">@if(point.imageUrl && !fotos.tem(point.id)){<img [src]="point.imageUrl" [alt]="point.name" (error)="fotos.marcar(point.id)" />}@else{<span>Foto da peça indisponível</span>}</div>
               <div class="map-popup__body"><span class="media-chip">{{point.mediaType}}</span><h2>{{point.name}}</h2><p>{{point.address}} · {{point.city}}</p><dl><div><dt>Código</dt><dd>{{point.code}}</dd></div><div><dt>Formato</dt><dd>{{point.format}}</dd></div></dl><small>Veiculação · valor de referência</small><strong>{{point.price | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong><button type="button" (click)="addToCart(point)" [disabled]="!point.available">{{cart.contains(point.id)?'Adicionada ao carrinho':'Adicionar ao carrinho'}}</button><a [routerLink]="['/pecas',point.code]">Ver detalhes</a></div>
             </div>
           }
@@ -157,6 +158,7 @@ export class AurumMapPage implements AfterViewInit {
   private poiMarkers: any[] = [];
   private requestVersion = 0;
   private viewReady = false;
+  readonly fotos = new FotosIndisponiveis();
   readonly points = signal<InventoryPoint[]>([]);
   readonly recommendedPoints = computed(() => recommendationList(this.points(), true));
   readonly listMode = signal<'recommended' | 'all'>('recommended');

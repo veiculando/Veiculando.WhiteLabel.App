@@ -5,6 +5,7 @@ import { InventoryPoint } from '../../core/api/app-api.models';
 import { CartDrawerService } from '../../core/cart/cart-drawer.service';
 import { CartService } from '../../core/cart/cart.service';
 import { InventoryService } from '../../core/inventory/inventory.service';
+import { FotosIndisponiveis } from '../../core/inventory/fotos-indisponiveis';
 import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.service';
 
 @Component({
@@ -17,7 +18,7 @@ import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.serv
       @else if(point();as piece){
         <div class="piece-hero">
           <div class="piece-photo">
-            @if(piece.imageUrl){<img [src]="piece.imageUrl" [alt]="piece.name" />}@else{<div class="missing-photo"><span>Foto da peça ainda não fornecida pelo inventário</span></div>}
+            @if(piece.imageUrl && !fotos.tem(piece.id)){<img [src]="piece.imageUrl" [alt]="piece.name" (error)="fotos.marcar(piece.id)" />}@else{<div class="missing-photo"><span>Foto da peça ainda não fornecida pelo inventário</span></div>}
             <span class="piece-media-chip">{{piece.mediaType}}</span>
           </div>
           <div class="piece-streetview" #streetView aria-label="Street View ou mapa da localização">@if(visualLoading()){<span>Carregando localização…</span>}</div>
@@ -41,6 +42,7 @@ export class AurumPiecePage {
   private readonly mapsLoader=inject(GoogleMapsLoaderService);
   private readonly drawer=inject(CartDrawerService);
   readonly cart=inject(CartService);
+  readonly fotos=new FotosIndisponiveis();
   readonly point=signal<InventoryPoint|null>(null);
   readonly error=signal('');
   readonly visualLoading=signal(true);
