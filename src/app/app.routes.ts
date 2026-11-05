@@ -27,6 +27,8 @@ export const routes: Routes = [
       { path: 'mapa', loadComponent: () => import('./features/inventory/aurum-map.page').then(m => m.AurumMapPage) },
       { path: 'pecas/:codigo', loadComponent: () => import('./features/inventory/aurum-piece.page').then(m => m.AurumPiecePage) },
       { path: 'checkout', loadComponent: () => import('./features/checkout/aurum-checkout.page').then(m => m.AurumCheckoutPage) },
+      // VEI-RD-157e: carteira da vendedora na Prospecção; o BFF recusa fora dela.
+      { path: 'meus-clientes', loadComponent: () => import('./features/carteira/meus-clientes.page').then(m => m.MeusClientesPage) },
       { path: 'pedidos/sucesso', loadComponent: () => import('./features/checkout/aurum-success.page').then(m => m.AurumSuccessPage) },
     ],
   },
