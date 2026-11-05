@@ -2,6 +2,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 import { SecureStorage } from '../../core/auth/secure-storage';
 import { ProspeccaoEntrarPage } from './prospeccao-entrar.page';
 
@@ -62,9 +63,25 @@ describe('entrada de prospecção', () => {
     request.flush({ token: 'jwt-app-teste', expiresInMinutes: 15, email: 'qa@example.test', prospeccao: true, fonteUsuarioId: 12 });
 
     expect(save).toHaveBeenCalledWith('veiculando-wl.token', 'jwt-app-teste');
+    // O usuário é carregado antes do mapa: sem isso o mapa trata a sessão como visitante.
+    expect(navigate).not.toHaveBeenCalled();
+    http.expectOne('/api/wl/app/auth/me').flush({ name: 'Casa', email: 'casa@example.test', accountType: 'ad', kycStatus: 'approved' });
+    expect(TestBed.inject(AdvertiserAuthService).user()?.kycStatus).toBe('approved');
     expect(navigate).toHaveBeenCalledWith(['/mapa'], { replaceUrl: true });
     expect(window.location.href).toBe(urlBefore);
     expect(log).not.toHaveBeenCalledWith(expect.stringContaining(token));
     expect(opener.postMessage).not.toHaveBeenCalledWith(expect.objectContaining({ token }), expect.anything());
+  });
+
+  it('abre o mapa mesmo se o carregamento do usuário falhar', () => {
+    vi.spyOn(SecureStorage, 'setToken').mockImplementation(() => {});
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    send(origin);
+    http.expectOne('/api/wl/app/prospeccao/sessao')
+      .flush({ token: 'jwt-app-teste', expiresInMinutes: 15, email: 'qa@example.test', prospeccao: true, fonteUsuarioId: 12 });
+    http.expectOne('/api/wl/app/auth/me').flush({ message: 'erro' }, { status: 500, statusText: 'Erro' });
+
+    expect(navigate).toHaveBeenCalledWith(['/mapa'], { replaceUrl: true });
   });
 });

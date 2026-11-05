@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 import { SecureStorage } from '../../core/auth/secure-storage';
 import { CarteiraService } from '../../core/carteira/carteira.service';
 
@@ -58,6 +59,7 @@ interface ResgateResposta {
 export class ProspeccaoEntrarPage implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly auth = inject(AdvertiserAuthService);
 
   readonly erro = signal('');
 
@@ -123,9 +125,14 @@ export class ProspeccaoEntrarPage implements OnInit, OnDestroy {
           // VEI-RD-157e: sem anunciante, a vendedora atua pela própria carteira.
           if (sessao.prospeccao && anuncianteId === null) CarteiraService.marcarSessao(sessao.token);
           else CarteiraService.limparSessao();
+          this.auth.isAuthenticated.set(true);
           // `replaceUrl`: a rota de entrada não fica no histórico, então o botão
           // "voltar" não leva a uma página que tentaria gastar um token já usado.
-          this.router.navigate(['/mapa'], { replaceUrl: true });
+          const irParaMapa = () => void this.router.navigate(['/mapa'], { replaceUrl: true });
+          // Sem carregar o usuário, o mapa trata a sessão como visitante ("Entre para
+          // escolher ou criar uma campanha") e a venda não sai. Se /me falhar, o mapa
+          // abre do mesmo jeito: o checkout tenta carregar de novo.
+          this.auth.loadMe().subscribe({ next: irParaMapa, error: irParaMapa });
         },
         error: (resposta) => {
           this.erro.set(resposta?.error?.message ?? 'Sessão de prospecção inválida ou expirada.');
