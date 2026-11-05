@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal }
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { SecureStorage } from '../../core/auth/secure-storage';
+import { CarteiraService } from '../../core/carteira/carteira.service';
 
 interface ResgateResposta {
   token: string;
@@ -119,6 +120,9 @@ export class ProspeccaoEntrarPage implements OnInit, OnDestroy {
       .subscribe({
         next: (sessao) => {
           SecureStorage.setToken(environment.tokenKey, sessao.token);
+          // VEI-RD-157e: sem anunciante, a vendedora atua pela própria carteira.
+          if (sessao.prospeccao && anuncianteId === null) CarteiraService.marcarSessao(sessao.token);
+          else CarteiraService.limparSessao();
           // `replaceUrl`: a rota de entrada não fica no histórico, então o botão
           // "voltar" não leva a uma página que tentaria gastar um token já usado.
           this.router.navigate(['/mapa'], { replaceUrl: true });

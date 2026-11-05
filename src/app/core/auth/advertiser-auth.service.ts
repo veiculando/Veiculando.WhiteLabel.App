@@ -5,6 +5,7 @@ import { delay, finalize, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AccountType, KycStatus, SessionResponse } from '../api/app-api.models';
 import { SecureStorage } from './secure-storage';
+import { CarteiraService } from '../carteira/carteira.service';
 
 interface CurrentUser { name: string; email: string; accountType?: AccountType; kycStatus: KycStatus; }
 export interface RegistrationPolicy { termsVersion: string; privacyVersion: string; requireCorporateEmail: boolean; }
@@ -85,6 +86,7 @@ export class AdvertiserAuthService {
 
   private clearSession() {
     SecureStorage.clear(environment.tokenKey);
+    CarteiraService.limparSessao();
     this.state.set(null);
     this.isAuthenticated.set(false);
     void this.router.navigate(['/mapa']);
