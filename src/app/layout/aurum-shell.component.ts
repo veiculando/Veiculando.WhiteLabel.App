@@ -68,7 +68,9 @@ export class AppShellComponent {
   readonly cart = inject(CartService);
   readonly auth = inject(AdvertiserAuthService);
   /** Recalculado a cada render: a marca muda com o login/logout. */
-  carteira() { return !!this.auth.user() && CarteiraService.sessaoAtiva(); }
+  // A entrada pela Prospecção grava o token sem carregar o usuário (auth.user() fica
+  // vazio); a marca de carteira já confere o token, então basta ela.
+  carteira() { return CarteiraService.sessaoAtiva(); }
   readonly menuOpen = signal(false);
   readonly cartOpen = inject(CartDrawerService).open;
   readonly profileOpen = signal(false);
