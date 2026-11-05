@@ -1,5 +1,3 @@
-@use '../onboarding/onboarding.scss';
-
 .carteira { display: grid; gap: 18px; width: min(860px, 100%); margin: 0 auto; padding: 32px 16px 64px; }
 .carteira__head { display: flex; gap: 16px; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; }
 .carteira__head h1 { margin: 0 0 6px; font-family: var(--font-display); }

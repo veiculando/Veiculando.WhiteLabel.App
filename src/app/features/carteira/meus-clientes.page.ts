@@ -36,7 +36,7 @@ export const editavel = (item: CarteiraItem) => item.status === 'Rascunho' || it
   selector: 'app-meus-clientes',
   imports: [DatePipe, ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './meus-clientes.page.scss',
+  styleUrls: ['../onboarding/onboarding.scss', './meus-clientes.page.scss'],
   template: `
     <section class="carteira">
       <header class="carteira__head">
