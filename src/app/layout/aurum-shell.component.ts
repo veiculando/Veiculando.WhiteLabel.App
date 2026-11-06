@@ -5,6 +5,7 @@ import { AdvertiserAuthService } from '../core/auth/advertiser-auth.service';
 import { BrandingService } from '../core/branding/branding.service';
 import { CartService } from '../core/cart/cart.service';
 import { CartDrawerService } from '../core/cart/cart-drawer.service';
+import { CarteiraService } from '../core/carteira/carteira.service';
 
 @Component({
   selector: 'app-shell',
@@ -17,6 +18,7 @@ import { CartDrawerService } from '../core/cart/cart-drawer.service';
       </a>
       <nav id="mobile-navigation" [class.is-open]="menuOpen()" aria-label="Navegação principal">
         <a routerLink="/mapa" routerLinkActive="is-active" (click)="closePanels()">Início</a>
+        @if (carteira()) { <a routerLink="/meus-clientes" routerLinkActive="is-active" (click)="closePanels()">Meus clientes</a> }
         <a href="mailto:suporte@veiculando.com.br">Suporte</a>
       </nav>
       <div class="topbar__actions">
@@ -65,6 +67,10 @@ export class AppShellComponent {
   readonly brand = inject(BrandingService).branding;
   readonly cart = inject(CartService);
   readonly auth = inject(AdvertiserAuthService);
+  /** Recalculado a cada render: a marca muda com o login/logout. */
+  // A entrada pela Prospecção grava o token sem carregar o usuário (auth.user() fica
+  // vazio); a marca de carteira já confere o token, então basta ela.
+  carteira() { return CarteiraService.sessaoAtiva(); }
   readonly menuOpen = signal(false);
   readonly cartOpen = inject(CartDrawerService).open;
   readonly profileOpen = signal(false);

@@ -1,0 +1,28 @@
+.carteira { display: grid; gap: 18px; width: min(860px, 100%); margin: 0 auto; padding: 32px 16px 64px; }
+.carteira__head { display: flex; gap: 16px; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; }
+.carteira__head h1 { margin: 0 0 6px; font-family: var(--font-display); }
+.carteira__head p:not(.step) { margin: 0; max-width: 560px; color: var(--on-surface); }
+.card { display: grid; gap: 14px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--white); }
+.card h2 { margin: 0; font-size: 1.3rem; }
+.form-grid .full { grid-column: 1 / -1; }
+.hint { margin: 0; color: var(--on-surface); font-size: .88rem; }
+.actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.empty { text-align: center; }
+.empty p { margin: 0; color: var(--on-surface); }
+.alert { margin: 0; padding: 12px 14px; border-radius: 10px; border: 1px solid; }
+.alert--danger { color: var(--danger); background: var(--danger-bg); border-color: var(--danger-border); }
+.alert--success { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
+.cliente > header { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; }
+.cliente h3 { margin: 0 0 4px; }
+.cliente small { color: var(--on-surface); }
+.cliente--aberto { border-color: var(--secondary-color); }
+.badge { flex: none; padding: 4px 10px; border-radius: var(--radius-pill); font-size: .78rem; font-weight: 750; background: var(--surface-muted); color: var(--charcoal); }
+.badge[data-status='PendenteAnalise'] { background: var(--warning-bg); color: var(--warning); }
+.badge[data-status='AjustesSolicitados'], .badge[data-status='Reprovado'] { background: var(--danger-bg); color: var(--danger); }
+.badge[data-status='Aprovado'] { background: var(--success-bg); color: var(--success); }
+.motivo { margin: 0; padding: 10px 12px; border-left: 3px solid var(--primary-color); background: var(--surface-muted); }
+.docs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.doc { padding: 12px; border: 1px dashed var(--border); border-radius: 10px; }
+.doc span { color: var(--on-surface); font-weight: 500; overflow-wrap: anywhere; }
+.doc input { padding: 6px 0; border: 0; background: transparent; }
+@media (max-width: 560px) { .docs { grid-template-columns: 1fr; } .cliente > header { flex-direction: column; } }
