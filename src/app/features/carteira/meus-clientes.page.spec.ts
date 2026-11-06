@@ -80,4 +80,16 @@ describe('Meus clientes (VEI-RD-157e)', () => {
     SecureStorage.setToken(environment.tokenKey, 'outro-login-normal-fedcba9876543210');
     expect(CarteiraService.sessaoAtiva()).toBe(false);
   });
+
+  it('refaz o próprio cadastro reprovado só com o CNPJ (VEI-SUP-40)', () => {
+    const cadastrar = vi.fn().mockReturnValue(of({ id: 'c1', clienteId: 10, status: 'Rascunho', origem: 'Cadastro', documentosDispensaveis: false }));
+    const fixture = montar({ listar: () => of([item({ status: 'Reprovado', motivo: 'Documento ilegível' })]), cadastrar });
+    fixture.detectChanges();
+    const botao = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(b => b.textContent?.includes('Refazer cadastro'));
+    expect(botao).toBeTruthy();
+    botao!.click();
+    expect(cadastrar).toHaveBeenCalledWith({ cnpj: '11222333000181' });
+    expect(fixture.componentInstance.aviso()).toContain('Cadastro reaberto');
+  });
 });
+

@@ -103,6 +103,11 @@ export const editavel = (item: CarteiraItem) => item.status === 'Rascunho' || it
             </div>
           }
           @if (item.status === 'Aprovado') { <p class="hint">Pronto para vender. <a routerLink="/mapa">Ir ao mapa</a></p> }
+          @if (item.status === 'Reprovado') {
+            <div class="actions">
+              <button type="button" class="secondary" [disabled]="salvando()" (click)="refazer(item)">Refazer cadastro</button>
+            </div>
+          }
         </article>
       }
     </section>
@@ -182,6 +187,23 @@ export class MeusClientesPage implements OnInit {
         this.carregar();
       },
       error: e => { this.salvando.set(false); this.erro.set(mensagemErro(e, 'Não foi possível cadastrar o cliente.')); },
+    });
+  }
+
+  /** VEI-SUP-40: o cadastro reprovado volta a rascunho com a mesma vendedora; os documentos antigos saem. */
+  refazer(item: CarteiraItem): void {
+    if (!item.cnpj) return;
+    this.salvando.set(true);
+    this.erro.set('');
+    this.aviso.set('');
+    this.service.cadastrar({ cnpj: item.cnpj }).subscribe({
+      next: r => {
+        this.salvando.set(false);
+        this.selecionado.set(r.id);
+        this.aviso.set('Cadastro reaberto. Anexe os documentos de novo e envie para análise.');
+        this.carregar();
+      },
+      error: e => { this.salvando.set(false); this.erro.set(mensagemErro(e, 'Não foi possível refazer o cadastro.')); },
     });
   }
 
