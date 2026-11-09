@@ -19,7 +19,7 @@ import { CarteiraService } from '../core/carteira/carteira.service';
       <nav id="mobile-navigation" [class.is-open]="menuOpen()" aria-label="Navegação principal">
         <a routerLink="/mapa" routerLinkActive="is-active" (click)="closePanels()">Início</a>
         @if (carteira()) { <a routerLink="/meus-clientes" routerLinkActive="is-active" (click)="closePanels()">Meus clientes</a> }
-        @if (auth.user()) { <a routerLink="/anunciante/campanhas" routerLinkActive="is-active" (click)="closePanels()">Campanhas</a> }
+        @if (auth.user() || carteira()) { <a routerLink="/anunciante/campanhas" routerLinkActive="is-active" (click)="closePanels()">Campanhas</a> }
         <a href="mailto:suporte@veiculando.com.br">Suporte</a>
       </nav>
       <div class="topbar__actions">

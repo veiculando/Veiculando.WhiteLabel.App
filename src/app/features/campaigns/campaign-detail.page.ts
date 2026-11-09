@@ -1,33 +1,54 @@
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { CAMPAIGN_STATUS_LABEL, CampaignDetail, CampaignOrderRow, verbaDisponivel } from './campaign.models';
+import { CAMPAIGN_STATUS_LABEL, CampaignDetail, CampaignOrderRow, CampaignStatus, mensagensDoServidor } from './campaign.models';
+import { CampaignFormComponent } from './campaign-form.component';
 import { CampaignsService } from './campaigns.service';
 
+/** Pedidos agrupados Estado → Cidade, na ordem que o BFF já devolve. */
+export function agruparPedidos(rows: CampaignOrderRow[]) {
+  const estados = new Map<string, Map<string, CampaignOrderRow[]>>();
+  for (const row of rows) {
+    const cidades = estados.get(row.estado) ?? new Map<string, CampaignOrderRow[]>();
+    cidades.set(row.cidade, [...(cidades.get(row.cidade) ?? []), row]);
+    estados.set(row.estado, cidades);
+  }
+  return [...estados].map(([estado, cidades]) => ({ estado, cidades: [...cidades].map(([cidade, pedidos]) => ({ cidade, pedidos })) }));
+}
+
+/** VEI-RD-45b/c/d/g: detalhe da campanha. Valores e permissões vêm prontos do BFF. */
 @Component({
   selector: 'app-campaign-detail',
-  imports: [RouterLink, CurrencyPipe, DecimalPipe],
+  imports: [RouterLink, CurrencyPipe, DecimalPipe, DatePipe, CampaignFormComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './campaigns.scss',
   template: `
     <article class="detail">
-      <a routerLink="/anunciante/campanhas">Voltar</a>
-      @if (error()) { <p class="campaigns__error">{{ error() }}</p> }
+      <a routerLink="/anunciante/campanhas" [queryParams]="voltarParams()">← Voltar</a>
+      @if (loading()) { <p>Carregando campanha…</p> }
+      @else if (notFound()) {
+        <div class="empty"><h1>Campanha não encontrada</h1><p>Ela não existe ou não está na sua carteira.</p></div>
+      } @else if (error()) { <p class="campaigns__error">{{ error() }}</p> }
       @if (campaign(); as item) {
         <header class="detail__head">
-          @if (item.anunciante?.logoUrl) { <img [src]="item.anunciante?.logoUrl" [alt]="item.anunciante?.nome ?? ''" /> }
-          <h1>{{ item.nome }} <span class="badge">{{ label(item.status) }}</span></h1>
-          <button type="button" disabled>Editar campanha</button>
-          @if (item.podeVerRelatorio) {
-            <a [href]="reportUrl(item.codigo)" target="_blank" rel="noopener">Relatório de locais</a>
-            <a routerLink="/mapa" [queryParams]="{ campanha: item.codigo }">Ver no mapa</a>
-          }
+          <div>
+            <h1>{{ item.nome }} <span [class]="'badge badge--' + item.status">{{ label(item.status) }}</span></h1>
+            <p>{{ item.anunciante.nome }} · {{ item.codigo }} · {{ item.dataInicio | date:'dd/MM/yyyy' }} – {{ item.dataFim | date:'dd/MM/yyyy' }}</p>
+          </div>
+          <div class="detail__actions">
+            @if (item.podeEditar) { <button type="button" class="primary" (click)="editOpen.set(true)">Editar Campanha</button> }
+            @if (item.podeVerRelatorio) {
+              <button type="button" disabled>Relatório de Locais</button>
+              <button type="button" disabled>Ver no Mapa</button>
+            }
+          </div>
         </header>
-        <section class="money">
+        <section class="money" aria-label="Valores da campanha nesta exibidora">
           <p class="money--grafite"><span>Budget total</span><strong>{{ item.budgetTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong></p>
           <p class="money--verde"><span>Pedidos confirmados</span><strong>{{ item.pedidosConfirmados | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong></p>
           <p class="money--vinho"><span>Pedidos pendentes</span><strong>{{ item.pedidosPendentes | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong></p>
-          <p class="money--dourado"><span>Verba disponível</span><strong>{{ available(item) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong></p>
+          <p class="money--dourado" title="Verba menos os pedidos confirmados e pendentes nesta exibidora"><span>Verba disponível</span>
+            <strong>{{ item.verbaDisponivel === null ? '—' : (item.verbaDisponivel | currency:'BRL':'symbol':'1.2-2':'pt-BR') }}</strong></p>
         </section>
         <section class="counts">
           @for (counter of counters(item); track counter.label) {
@@ -35,57 +56,52 @@ import { CampaignsService } from './campaigns.service';
               <progress [value]="counter.value" [max]="item.totalPecas || 1"></progress></p>
           }
         </section>
-        <nav>
+        <nav class="tabs" role="tablist">
           @for (name of tabs; track name) {
-            <button type="button" [class.is-active]="tab() === name" (click)="tab.set(name)">{{ name }}</button>
+            <button type="button" role="tab" [attr.aria-selected]="tab() === name" [class.is-active]="tab() === name" (click)="tab.set(name)">{{ name }}</button>
           }
         </nav>
         @switch (tab()) {
           @case ('Pedidos') {
-            @for (state of states(item.pedidos); track state) {
+            @for (estado of grupos(); track estado.estado) {
               <details open>
-                <summary>{{ state }}</summary>
-                @for (city of cities(item.pedidos, state); track city) {
-                  <details>
-                    <summary>{{ city }}</summary>
+                <summary>{{ estado.estado }}</summary>
+                @for (cidade of estado.cidades; track cidade.cidade) {
+                  <details open>
+                    <summary>{{ cidade.cidade }}</summary>
                     <table>
-                      <tr><th>Código</th><th>Local</th><th>Período</th><th>Status</th></tr>
-                      @for (row of rows(item.pedidos, state, city); track row.codigo) {
-                        <tr><td>{{ row.codigo }}</td><td>{{ row.local }}</td><td>{{ row.periodo }}</td><td>{{ row.status }}</td></tr>
-                      }
+                      <thead><tr><th>Pedido</th><th>Período</th><th>Status</th><th>Peças</th><th>Valor</th><th></th></tr></thead>
+                      <tbody>
+                        @for (row of cidade.pedidos; track row.codigo) {
+                          <tr>
+                            <td><button type="button" class="link" disabled title="Pedido Detalhe em breve">{{ row.codigo }}</button></td>
+                            <td>{{ row.periodo.dataInicio | date:'dd/MM/yyyy' }} – {{ row.periodo.dataFim | date:'dd/MM/yyyy' }}</td>
+                            <td>{{ row.status }}</td>
+                            <td>{{ row.pecas | number:'1.0-0':'pt-BR' }}</td>
+                            <td>{{ row.valor | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
+                            <td>@if (row.simulacao) { <button type="button" disabled>Excluir simulação</button> }</td>
+                          </tr>
+                        }
+                      </tbody>
                     </table>
                   </details>
                 }
               </details>
-            }
+            } @empty { <p class="empty">Esta campanha ainda não tem pedidos nesta exibidora.</p> }
           }
-          @case ('Arte final') {
-            <button type="button" [class.is-active]="art() === 'motivos'" (click)="art.set('motivos')">Motivos</button>
-            <button type="button" [class.is-active]="art() === 'layouts'" (click)="art.set('layouts')">Layouts</button>
-            <ul>
-              @for (file of (art() === 'motivos' ? item.motivos : item.layouts); track file.nome) {
-                <li>{{ file.nome }}</li>
-              }
-            </ul>
-            <label>Enviar arquivo <input type="file" disabled /></label>
-          }
-          @case ('Produção') {
-            <table>
-              <tr><th>Peça</th><th>Formato</th><th>Medida</th><th>Material</th></tr>
-              @for (spec of item.producao; track spec.peca) {
-                <tr><td>{{ spec.peca }}</td><td>{{ spec.formato }}</td><td>{{ spec.medida }}</td><td>{{ spec.material }}</td></tr>
-              }
-            </table>
-            <button type="button" (click)="print()">Exportar PDF</button>
-          }
+          @case ('Arte Final') { <p class="empty">Os motivos e layouts da campanha aparecerão aqui em breve.</p> }
+          @case ('Produção') { <p class="empty">As especificações de produção aparecerão aqui em breve.</p> }
           @case ('Checking') {
             @switch (item.checking.estado) {
-              @case ('indisponivel') { <p>Checking ainda indisponível.</p> }
-              @case ('parcial') { <p>Checking parcial.</p> <a [href]="item.checking.pdfUrl">Ver checking</a> }
-              @case ('concluido') { <p>Checking concluído.</p> <a [href]="item.checking.pdfUrl">Baixar PDF</a> }
+              @case ('indisponivel') { <p class="empty">O checking fica disponível quando a campanha entra em exibição.</p> }
+              @case ('parcial') { <p>Campanha em checking.</p> <button type="button" disabled>Ver Checking</button> }
+              @case ('concluido') { <p>Campanha veiculada.</p> <button type="button" disabled>Baixar PDF</button> }
             }
           }
-          @case ('Financeiro') { <p>Documentos financeiros</p> }
+          @case ('Financeiro') { <p class="empty">Documentos Financeiros</p> }
+        }
+        @if (editOpen()) {
+          <app-campaign-form [campaign]="item" (closed)="editOpen.set(false)" (saved)="editOpen.set(false); carregar()" />
         }
       }
     </article>
@@ -93,44 +109,36 @@ import { CampaignsService } from './campaigns.service';
 })
 export class CampaignDetailPage {
   private readonly api = inject(CampaignsService);
-  private readonly route = inject(ActivatedRoute);
+  private readonly codigo = inject(ActivatedRoute).snapshot.paramMap.get('codigo') ?? '';
   readonly campaign = signal<CampaignDetail | null>(null);
+  readonly loading = signal(true);
+  readonly notFound = signal(false);
   readonly error = signal('');
+  readonly editOpen = signal(false);
   readonly tab = signal('Pedidos');
-  readonly art = signal<'motivos' | 'layouts'>('motivos');
-  readonly tabs = ['Pedidos', 'Arte final', 'Produção', 'Checking', 'Financeiro'];
-  readonly label = (status: CampaignDetail['status']) => CAMPAIGN_STATUS_LABEL[status] ?? status;
-  readonly available = verbaDisponivel;
+  readonly tabs = ['Pedidos', 'Arte Final', 'Produção', 'Checking', 'Financeiro'];
+  readonly label = (status: CampaignStatus) => CAMPAIGN_STATUS_LABEL[status] ?? status;
+  readonly grupos = () => agruparPedidos(this.campaign()?.pedidos ?? []);
+  readonly voltarParams = () => this.campaign() ? { clienteId: this.campaign()!.anunciante.id } : {};
   readonly counters = (item: CampaignDetail) => [
-    { label: 'Total', value: item.totalPecas },
+    { label: 'Total de peças', value: item.totalPecas },
     { label: 'Confirmadas', value: item.pecasConfirmadas },
     { label: 'Pendentes', value: item.pecasPendentes },
     { label: 'Publicadas', value: item.pecasPublicadas },
   ];
 
-  constructor() {
-    const codigo = this.route.snapshot.paramMap.get('codigo') ?? '';
-    this.api.detail(codigo).subscribe({
-      next: item => this.campaign.set(item),
-      error: () => this.error.set('O detalhe da campanha ainda não está disponível neste ambiente.'),
+  constructor() { this.carregar(); }
+
+  carregar() {
+    this.loading.set(true);
+    this.api.detail(this.codigo).subscribe({
+      next: item => { this.campaign.set(item); this.loading.set(false); },
+      error: err => {
+        this.campaign.set(null);
+        this.notFound.set(err?.status === 404);
+        this.error.set(mensagensDoServidor(err, 'Não foi possível carregar a campanha.')[0]);
+        this.loading.set(false);
+      },
     });
   }
-
-  reportUrl(codigo: string) {
-    return `${location.origin}/api/wl/app/anunciante/campanhas/${encodeURIComponent(codigo)}/relatorio`;
-  }
-
-  states(rows: CampaignOrderRow[]) {
-    return [...new Set(rows.map(row => row.estado))];
-  }
-
-  cities(rows: CampaignOrderRow[], state: string) {
-    return [...new Set(rows.filter(row => row.estado === state).map(row => row.cidade))];
-  }
-
-  rows(rows: CampaignOrderRow[], state: string, city: string) {
-    return rows.filter(row => row.estado === state && row.cidade === city);
-  }
-
-  print() { window.print(); }
 }

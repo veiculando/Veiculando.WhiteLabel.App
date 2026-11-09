@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { minhasCampanhasGuard } from './features/campaigns/minhas-campanhas.guard';
 import { AuthLayoutComponent } from './layout/auth-layout.component';
 import { AppShellComponent } from './layout/aurum-shell.component';
 
@@ -31,7 +32,9 @@ export const routes: Routes = [
       // VEI-RD-157e: carteira da vendedora na Prospecção; o BFF recusa fora dela.
       { path: 'meus-clientes', loadComponent: () => import('./features/carteira/meus-clientes.page').then(m => m.MeusClientesPage) },
       { path: 'pedidos/sucesso', loadComponent: () => import('./features/checkout/aurum-success.page').then(m => m.AurumSuccessPage) },
-      { path: 'anunciante/campanhas', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/campaigns.page').then(m => m.CampaignsPage) },
+      // VEI-RD-67: Minhas Campanhas decide entre painel e gateway pelo GET /app/clients.
+      { path: 'anunciante/clientes', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/clients-gateway.page').then(m => m.ClientsGatewayPage) },
+      { path: 'anunciante/campanhas', canActivate: [authGuard, minhasCampanhasGuard], runGuardsAndResolvers: 'paramsOrQueryParamsChange', loadComponent: () => import('./features/campaigns/campaigns.page').then(m => m.CampaignsPage) },
       { path: 'anunciante/campanhas/campanha/:codigo', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/campaign-detail.page').then(m => m.CampaignDetailPage) },
     ],
   },
