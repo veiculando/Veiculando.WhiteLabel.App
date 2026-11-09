@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppClients, CAMPAIGN_STATUSES, CAMPAIGN_STATUS_LABEL, CampaignStatus, CampaignSummary, mensagensDoServidor } from './campaign.models';
 import { CampaignFormComponent } from './campaign-form.component';
@@ -24,13 +24,13 @@ export function filtrarCampanhas(items: CampaignSummary[], termo: string, status
         <header class="advertiser">
           <div><strong>{{ client.nome }}</strong><span>{{ client.cnpj }}</span></div>
           <div class="advertiser__menu">
-            <button type="button" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())">Trocar anunciante ▾</button>
+            <button type="button" class="ghost" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())">Trocar anunciante ▾</button>
             @if (menuOpen()) {
               <ul role="menu">
                 @for (other of outros(); track other.id) {
                   <li><a role="menuitem" routerLink="/anunciante/campanhas" [queryParams]="{ clienteId: other.id }" (click)="menuOpen.set(false)">{{ other.nome }}</a></li>
                 }
-                <li><a role="menuitem" routerLink="/anunciante/clientes">Gerenciar anunciantes</a></li>
+                <li><a role="menuitem" routerLink="/anunciante/clientes" (click)="menuOpen.set(false)">Gerenciar anunciantes</a></li>
                 @if (clients()?.podeAdicionarAnunciante) { <li><a role="menuitem" routerLink="/anunciante/clientes/novo">Adicionar anunciante</a></li> }
               </ul>
             }
@@ -100,6 +100,16 @@ export class CampaignsPage {
   readonly podeCriar = computed(() => !!this.clients()?.clientes.length);
   /** No painel de um cliente, o modal já nasce com ele (travado quando é o único). */
   readonly formClients = computed(() => this.cliente() ? [this.cliente()!] : this.clients()?.clientes ?? []);
+
+  private readonly host = inject(ElementRef<HTMLElement>);
+
+  @HostListener('document:keydown.escape') fecharMenu() { this.menuOpen.set(false); }
+
+  @HostListener('document:click', ['$event'])
+  cliqueFora(event: MouseEvent) {
+    const menu = (this.host.nativeElement as HTMLElement).querySelector('.advertiser__menu');
+    if (this.menuOpen() && menu && !menu.contains(event.target as Node)) this.menuOpen.set(false);
+  }
 
   constructor() {
     this.api.clients().subscribe({ next: data => this.clients.set(data), error: () => this.clients.set(null) });
