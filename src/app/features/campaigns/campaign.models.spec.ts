@@ -20,7 +20,9 @@ describe('Minhas Campanhas — roteamento (VEI-RD-67a)', () => {
     expect(destinoMinhasCampanhas(clients('agencia', 1), null)).toEqual({ tipo: 'painel', clienteId: 1 });
   });
   it('agência sem cliente abre o painel vazio; com vários, o gateway', () => {
-    expect(destinoMinhasCampanhas(clients('agencia', 0), null)).toEqual({ tipo: 'painel', clienteId: null });
+    expect(destinoMinhasCampanhas({ ...clients('agencia', 0), podeAdicionarAnunciante: false }, null)).toEqual({ tipo: 'painel', clienteId: null });
+    // VEI-RD-67j: a agência que pode adicionar vai ao gateway para adicionar e acompanhar pedidos.
+    expect(destinoMinhasCampanhas({ ...clients('agencia', 0), podeAdicionarAnunciante: true }, null)).toEqual({ tipo: 'gateway' });
     expect(destinoMinhasCampanhas(clients('carteira', 3), null)).toEqual({ tipo: 'gateway' });
   });
   it('mantém o cliente da URL só se ele estiver na carteira', () => {
