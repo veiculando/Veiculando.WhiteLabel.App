@@ -77,12 +77,14 @@ export const CAMPAIGN_STATUSES = Object.keys(CAMPAIGN_STATUS_LABEL) as CampaignS
 /**
  * Para onde "Minhas Campanhas" leva a sessão (VEI-RD-67a), a partir do que o BFF devolveu.
  * Anunciante direto e carteira com um cliente vão direto ao painel; com mais de um, ao gateway;
- * sem nenhum, o painel mostra o estado vazio.
+ * sem nenhum, o painel mostra o estado vazio (a agência que pode adicionar vai ao gateway).
  */
 export function destinoMinhasCampanhas(clients: AppClients, clienteId: number | null):
   { tipo: 'painel'; clienteId: number | null } | { tipo: 'gateway' } {
   const ids = clients.clientes.map(c => c.id);
   if (clienteId !== null && ids.includes(clienteId)) return { tipo: 'painel', clienteId };
+  // VEI-RD-67j: agência sem cliente vai ao gateway, onde adiciona anunciante e acompanha os pedidos.
+  if (clients.perfil === 'agencia' && !ids.length && clients.podeAdicionarAnunciante) return { tipo: 'gateway' };
   if (clients.perfil === 'anunciante_direto' || ids.length <= 1) return { tipo: 'painel', clienteId: ids[0] ?? null };
   return { tipo: 'gateway' };
 }
