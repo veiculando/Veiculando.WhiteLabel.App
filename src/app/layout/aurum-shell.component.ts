@@ -24,7 +24,7 @@ import { CarteiraService } from '../core/carteira/carteira.service';
       </nav>
       <div class="topbar__actions">
         <button class="cart-button" type="button" [attr.aria-label]="'Abrir carrinho com ' + cart.count() + ' itens'" [attr.aria-expanded]="cartOpen()" (click)="toggleCart()"><span class="cart-icon" aria-hidden="true">▱</span><span class="cart-label">Carrinho</span><b>{{ cart.count() }}</b></button>
-        @if (auth.user()) { <button type="button" class="profile-button" aria-label="Abrir meu perfil" [attr.aria-expanded]="profileOpen()" (click)="toggleProfile()">●</button> }
+        @if (auth.user() || carteira()) { <button type="button" class="profile-button" aria-label="Abrir meu perfil" [attr.aria-expanded]="profileOpen()" (click)="toggleProfile()">●</button> }
         @else { <a class="profile-button profile-button--guest" routerLink="/login">Entrar</a> }
         <button type="button" class="menu-button" aria-label="Abrir navegação" aria-controls="mobile-navigation" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())"><span></span><span></span><span></span></button>
       </div>
@@ -58,6 +58,9 @@ import { CarteiraService } from '../core/carteira/carteira.service';
           <h3>Dados de cadastro</h3><dl><dt>Nome completo</dt><dd>{{user.name}}</dd><dt>E-mail</dt><dd>{{user.email}}</dd><dt>Status do cadastro</dt><dd>{{user.kycStatus === 'approved' ? 'Aprovado' : 'Em acompanhamento'}}</dd></dl>
           <p class="profile-note">Alterações de cadastro e histórico de pedidos dependem dos serviços de perfil.</p>
           <button class="profile-logout" type="button" (click)="closePanels(); auth.logout()">Sair da conta</button>
+        } @else if (carteira()) {
+          <p class="profile-note">Você está no App pela Prospecção, atendendo a carteira da exibidora.</p>
+          <button class="profile-logout" type="button" (click)="closePanels(); auth.logout()">Encerrar sessão</button>
         }
       </aside>
     }

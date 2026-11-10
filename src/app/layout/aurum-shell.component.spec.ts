@@ -37,3 +37,34 @@ describe('Menu "Meus clientes" (VEI-RD-157e)', () => {
     expect(links()).not.toContain('Meus clientes');
   });
 });
+
+describe('Header na sessão de Prospecção (VEI-SUP-44)', () => {
+  afterEach(() => { localStorage.clear(); TestBed.resetTestingModule(); });
+
+  function header() {
+    TestBed.configureTestingModule({
+      imports: [AppShellComponent],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    });
+    const fixture = TestBed.createComponent(AppShellComponent);
+    fixture.detectChanges();
+    return { fixture, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('mostra o perfil e não o "Entrar" na sessão de carteira', () => {
+    SecureStorage.setToken(environment.tokenKey, 'cabecalho.corpo.assinatura-da-sessao-de-carteira');
+    CarteiraService.marcarSessao('cabecalho.corpo.assinatura-da-sessao-de-carteira');
+    const { fixture, el } = header();
+    expect(el.querySelector('.profile-button--guest')).toBeNull();
+    const perfil = el.querySelector<HTMLButtonElement>('button.profile-button');
+    expect(perfil).not.toBeNull();
+    perfil!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.profile-logout')?.textContent?.trim()).toBe('Encerrar sessão');
+  });
+
+  it('sem sessão mostra o "Entrar"', () => {
+    const { el } = header();
+    expect(el.querySelector('.profile-button--guest')?.textContent?.trim()).toBe('Entrar');
+  });
+});
