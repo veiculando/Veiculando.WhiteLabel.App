@@ -76,7 +76,7 @@ export function recommendationList(points: InventoryPoint[], onlyRecommended: bo
                 <label for="map-campaign">Campanha existente</label>
                 <select id="map-campaign" [value]="campaignSelection.campaignId() ?? ''" (change)="selectCampaign($any($event.target).value)"><option value="">Escolher campanha</option>@for(campaign of campaigns();track campaign.id){<option [value]="campaign.id">{{campaign.name}}</option>}</select>
                 <button class="campaign-create-toggle" type="button" (click)="creatingCampaign.update(value=>!value)">{{creatingCampaign()?'Cancelar criação':'+ Criar campanha'}}</button>
-                @if(creatingCampaign()) { <div class="campaign-create-fields">@if(agencyClients();as clients){<label for="campaign-client">Anunciante representado</label><select id="campaign-client" [value]="newCampaignClientId() ?? ''" (change)="newCampaignClientId.set(+$any($event.target).value || null)"><option value="">Selecione o anunciante</option>@for(client of clients;track client.id){<option [value]="client.id">{{client.name}}</option>}</select>@if(!clients.length){@if(carteiraSessao){<p>Nenhum cliente aprovado na sua carteira. <a routerLink="/meus-clientes">Cadastre um cliente</a> e aguarde a aprovação da exibidora para criar a campanha.</p>}@else{<p>Nenhum anunciante com contrato ativo nesta exibidora. Solicite o vínculo antes de criar a campanha.</p>}}}<label for="campaign-name">Nome</label><input id="campaign-name" [value]="newCampaignName()" (input)="newCampaignName.set($any($event.target).value)" /><label for="campaign-product">Produto</label><input id="campaign-product" [value]="newCampaignProduct()" (input)="newCampaignProduct.set($any($event.target).value)" /><label for="campaign-job">Job (opcional)</label><input id="campaign-job" [value]="newCampaignJob()" (input)="newCampaignJob.set($any($event.target).value)" /><label for="campaign-start">Início previsto</label><input id="campaign-start" type="date" [value]="newCampaignStart()" (input)="newCampaignStart.set($any($event.target).value)" /><label for="campaign-end">Fim previsto</label><input id="campaign-end" type="date" [value]="newCampaignEnd()" (input)="newCampaignEnd.set($any($event.target).value)" /><label for="campaign-budget">Verba planejada</label><input id="campaign-budget" type="number" min="0" [value]="newCampaignBudget()" (input)="newCampaignBudget.set(+$any($event.target).value)" /><button type="button" (click)="createCampaign()" [disabled]="campaignBusy() || (agencyClients() !== null && !newCampaignClientId())">{{campaignBusy()?'Salvando…':'Criar e selecionar'}}</button></div> }
+                @if(creatingCampaign()) { <div class="campaign-create-fields">@if(agencyClients();as clients){<label for="campaign-client">Anunciante representado</label><select id="campaign-client" [value]="newCampaignClientId() ?? ''" (change)="newCampaignClientId.set(+$any($event.target).value || null)"><option value="">Selecione o anunciante</option>@for(client of clients;track client.id){<option [value]="client.id">{{client.name}}</option>}</select>@if(!clients.length){@if(carteiraSessao){<p>Nenhum cliente aprovado na sua carteira. <a routerLink="/meus-clientes">Cadastre um cliente</a> e aguarde a aprovação da exibidora para criar a campanha.</p>}@else{<p>Nenhum anunciante com contrato ativo nesta exibidora. Solicite o vínculo antes de criar a campanha.</p>}}}<label for="campaign-name">Nome</label><input id="campaign-name" [value]="newCampaignName()" (input)="newCampaignName.set($any($event.target).value)" /><label for="campaign-product">Produto</label><input id="campaign-product" [value]="newCampaignProduct()" (input)="newCampaignProduct.set($any($event.target).value)" /><label for="campaign-job">Job (opcional)</label><input id="campaign-job" [value]="newCampaignJob()" (input)="newCampaignJob.set($any($event.target).value)" /><label for="campaign-start">Início previsto</label><input id="campaign-start" type="date" [value]="newCampaignStart()" (input)="newCampaignStart.set($any($event.target).value)" /><label for="campaign-end">Fim previsto</label><input id="campaign-end" type="date" [value]="newCampaignEnd()" (input)="newCampaignEnd.set($any($event.target).value)" /><label for="campaign-budget">Verba planejada</label><input id="campaign-budget" type="number" inputmode="numeric" min="1000" max="100000000" step="1000" placeholder="Opcional, de mil em mil" [value]="newCampaignBudget() ?? ''" (input)="setNewCampaignBudget($any($event.target).value)" /><button type="button" (click)="createCampaign()" [disabled]="campaignBusy() || (agencyClients() !== null && !newCampaignClientId())">{{campaignBusy()?'Salvando…':'Criar e selecionar'}}</button></div> }
                 @if(campaignError()){<p role="alert">{{campaignError()}}</p>}
               }
             }
@@ -204,7 +204,8 @@ export class AurumMapPage implements AfterViewInit {
   readonly newCampaignJob = signal('');
   readonly newCampaignStart = signal('');
   readonly newCampaignEnd = signal('');
-  readonly newCampaignBudget = signal(0);
+  /** Vazio = sem verba (null). O BFF exige de R$ 1.000 a R$ 100.000.000, de mil em mil (VEI-SUP-46). */
+  readonly newCampaignBudget = signal<number | null>(null);
   readonly newCampaignClientId = signal<number | null>(null);
   readonly selectedMediaTypes = signal<string[]>([]);
   readonly query = signal('');
@@ -255,6 +256,7 @@ export class AurumMapPage implements AfterViewInit {
     const target=kind==='age'?this.ageRangeIds:kind==='income'?this.incomeRangeIds:this.psychographicIds;
     target.update(values=>values.includes(id)?values.filter(value=>value!==id):[...values,id]);
   }
+  setNewCampaignBudget(raw: string) { const value = Number(raw); this.newCampaignBudget.set(raw.trim() && Number.isFinite(value) && value > 0 ? value : null); }
   selectCampaign(raw: string) { const id=Number(raw); this.campaignSelection.selectCampaign(Number.isInteger(id)&&id>0?id:null); }
   private loadCampaigns() { this.checkout.context().subscribe({next: context => { this.campaigns.set(context.campaigns); this.agencyClients.set(context.clients ?? null); }, error: () => this.campaignError.set('Não foi possível carregar suas campanhas.')}); }
   createCampaign() {
@@ -265,7 +267,7 @@ export class AurumMapPage implements AfterViewInit {
     this.campaignBusy.set(true);this.campaignError.set('');
     this.checkout.createCampaign({name,product,job:this.newCampaignJob().trim(),startDate,endDate,budget:this.newCampaignBudget(),...(this.newCampaignClientId()?{clientId:this.newCampaignClientId()!}:{})}).pipe(finalize(()=>this.campaignBusy.set(false))).subscribe({
       next: campaign => { this.campaignSelection.selectCampaign(campaign.id); this.creatingCampaign.set(false); this.panel.set(null); this.loadCampaigns(); },
-      error: () => this.campaignError.set('Não foi possível criar a campanha. Confira o cadastro comercial e tente novamente.'),
+      error: (err: { error?: { message?: string; details?: string[] } }) => this.campaignError.set(campaignErrorMessage(err)),
     });
   }
   addToCart(point: InventoryPoint) { this.cart.add(point); this.cartDrawer.open.set(true); }
@@ -360,4 +362,11 @@ export class AurumMapPage implements AfterViewInit {
     }catch(error){this.mapError.set(error instanceof Error?error.message:'Não foi possível carregar o Google Maps.');}
     finally{this.mapLoading.set(false);}
   }
+}
+
+/** Mensagem do BFF para a criação de campanha: os details (400) ou a message (403/409). */
+export function campaignErrorMessage(err: { error?: { message?: string; details?: string[] } }): string {
+  const details = err?.error?.details?.filter(d => !!d) ?? [];
+  if (details.length) return details.join(' ');
+  return err?.error?.message || 'Não foi possível criar a campanha. Confira o cadastro comercial e tente novamente.';
 }
