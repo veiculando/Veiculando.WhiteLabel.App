@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { AppClients, CampaignDetail, CampaignInput, CampaignSummary, ProductionFilter, ProductionRow } from './campaign.models';
+import { AppClients, CampaignDetail, CampaignInput, CampaignSummary, ProductionFilter, ProductionRow, ArtMotivo, ArtLayout, CampaignArt } from './campaign.models';
 
 @Injectable({ providedIn: 'root' })
 export class CampaignsService {
@@ -43,5 +43,39 @@ export class CampaignsService {
   productionPdf(codigo: string, filtro: ProductionFilter) {
     return this.http.get(`${this.base}/${encodeURIComponent(codigo)}/producao/pdf`,
       { params: new HttpParams().set('filtro', filtro), responseType: 'blob' });
+  }
+
+  /** Aba Arte Final (VEI-RD-166). */
+  art(codigo: string) {
+    return this.http.get<CampaignArt>(this.artUrl(codigo));
+  }
+
+  createMotivo(codigo: string, nome: string, descricao: string) {
+    return this.http.post<ArtMotivo>(`${this.artUrl(codigo)}/motivos`, { nome, descricao });
+  }
+
+  deleteMotivo(codigo: string, id: number) {
+    return this.http.delete<void>(`${this.artUrl(codigo)}/motivos/${id}`);
+  }
+
+  /** Eventos de progresso para a barra do upload. */
+  uploadLayout(codigo: string, idMotivo: number, idFormato: number, file: File) {
+    const form = new FormData();
+    form.append('idMotivo', String(idMotivo));
+    form.append('idFormato', String(idFormato));
+    form.append('file', file, file.name);
+    return this.http.post<ArtLayout>(`${this.artUrl(codigo)}/layouts`, form, { reportProgress: true, observe: 'events' });
+  }
+
+  deleteLayout(codigo: string, id: number) {
+    return this.http.delete<void>(`${this.artUrl(codigo)}/layouts/${id}`);
+  }
+
+  downloadLayout(codigo: string, id: number) {
+    return this.http.get(`${this.artUrl(codigo)}/layouts/${id}/arquivo`, { responseType: 'blob' });
+  }
+
+  private artUrl(codigo: string) {
+    return `${this.base}/${encodeURIComponent(codigo)}/arte-final`;
   }
 }
