@@ -133,3 +133,18 @@ export const PRODUCTION_FILTERS: { value: ProductionFilter; label: string }[] = 
 export function extensoes(valor: string | null): string {
   return (valor ?? '').split(/[;,|\s]+/).map(e => e.trim().replace(/^\./, '').toUpperCase()).filter(Boolean).join(', ') || '—';
 }
+
+/** Aba Arte Final (VEI-RD-166): GET /api/wl/app/campaigns/{code}/arte-final. */
+export interface ArtMotivo { id: number; codigo: string; nome: string; descricao: string | null; }
+export interface ArtFormato {
+  id: number; nome: string; midia: 'impressa' | 'digital'; dimensao: string | null; resolucao: string | null;
+  duracao: number | null; extensoes: string[]; especificacaoCriacao: string | null; especificacaoArquivo: string | null;
+}
+export interface ArtLayout { id: number; idMotivo: number; idFormato: number; arquivo: string | null; enviadoEm: string; formatoNaCampanha: boolean; }
+export interface CampaignArt { podeEditar: boolean; tamanhoMaximo: number; motivos: ArtMotivo[]; formatos: ArtFormato[]; layouts: ArtLayout[]; }
+
+/** Extensão do arquivo aceita pelo formato (mesma regra do BFF). */
+export function extensaoAceita(arquivo: string, aceitas: string[]): boolean {
+  const ext = arquivo.includes('.') ? arquivo.split('.').pop()!.toLowerCase() : '';
+  return aceitas.includes(ext);
+}
