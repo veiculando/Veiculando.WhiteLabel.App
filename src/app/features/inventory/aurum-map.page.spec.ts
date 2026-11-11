@@ -1,6 +1,14 @@
-import { distanceMeters, recommendationList, supportIcon } from './aurum-map.page';
+import { campaignErrorMessage, distanceMeters, recommendationList, supportIcon } from './aurum-map.page';
 
 describe('mapa Aurum', () => {
+  it('mostra o motivo do BFF quando a criação de campanha é recusada (VEI-SUP-46)', () => {
+    expect(campaignErrorMessage({ error: { message: 'Não foi possível salvar a campanha.', details: ['A verba deve ser múltipla de R$ 1.000.'] } }))
+      .toBe('A verba deve ser múltipla de R$ 1.000.');
+    expect(campaignErrorMessage({ error: { message: 'O contrato com este anunciante não está vigente.' } }))
+      .toBe('O contrato com este anunciante não está vigente.');
+    expect(campaignErrorMessage({})).toContain('Não foi possível criar a campanha');
+  });
+
   it('filtra peças pela distância geográfica ao POI', () => {
     const poi = { latitude: -23.5505, longitude: -46.6333 };
     expect(distanceMeters(poi, poi)).toBe(0);
