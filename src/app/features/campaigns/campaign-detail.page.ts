@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CAMPAIGN_STATUS_LABEL, CampaignDetail, CampaignOrderRow, CampaignStatus, mensagensDoServidor } from './campaign.models';
 import { CampaignFormComponent } from './campaign-form.component';
+import { CampaignProductionComponent } from './campaign-production.component';
 import { CampaignsService } from './campaigns.service';
 
 /** Pedidos agrupados Estado → Cidade, na ordem que o BFF já devolve. */
@@ -19,7 +20,7 @@ export function agruparPedidos(rows: CampaignOrderRow[]) {
 /** VEI-RD-45b/c/d/g: detalhe da campanha. Valores e permissões vêm prontos do BFF. */
 @Component({
   selector: 'app-campaign-detail',
-  imports: [RouterLink, CurrencyPipe, DecimalPipe, DatePipe, CampaignFormComponent],
+  imports: [RouterLink, CurrencyPipe, DecimalPipe, DatePipe, CampaignFormComponent, CampaignProductionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './campaigns.scss',
   template: `
@@ -90,7 +91,7 @@ export function agruparPedidos(rows: CampaignOrderRow[]) {
             } @empty { <p class="empty">Esta campanha ainda não tem pedidos nesta exibidora.</p> }
           }
           @case ('Arte Final') { <p class="empty">Os motivos e layouts da campanha aparecerão aqui em breve.</p> }
-          @case ('Produção') { <p class="empty">As especificações de produção aparecerão aqui em breve.</p> }
+          @case ('Produção') { <app-campaign-production [codigo]="item.codigo" /> }
           @case ('Checking') {
             @switch (item.checking.estado) {
               @case ('indisponivel') { <p class="empty">O checking fica disponível quando a campanha entra em exibição.</p> }
