@@ -105,3 +105,31 @@ export function filtrarClientes(clientes: AppClient[], termo: string): AppClient
   if (!texto) return clientes;
   return clientes.filter(c => c.nome.toLowerCase().includes(texto) || (!!digitos && (c.cnpj ?? '').replace(/\D/g, '').includes(digitos)));
 }
+
+/** Linha da aba Produção (VEI-RD-165): peças do mesmo suporte e formato de arte final. */
+export interface ProductionRow {
+  suporte: string;
+  midia: 'impressa' | 'digital' | null;
+  formato: string | null;
+  dimensao: string | null;
+  resolucao: string | null;
+  duracao: number | null;
+  extensoesAceitas: string | null;
+  especificacaoCriacao: string | null;
+  especificacaoArquivo: string | null;
+  quantidade: number;
+}
+
+/** Filtro de status dos pedidos, igual ao Veiculando.Web: 1 aprovados; 2 + em andamento; 3 + simulações. */
+export type ProductionFilter = 1 | 2 | 3;
+
+export const PRODUCTION_FILTERS: { value: ProductionFilter; label: string }[] = [
+  { value: 1, label: 'Aprovados' },
+  { value: 2, label: 'Aprovados e em andamento' },
+  { value: 3, label: 'Com simulações' },
+];
+
+/** Extensões gravadas pelo Core ("pdf;ai" ou "pdf,ai") em lista legível. */
+export function extensoes(valor: string | null): string {
+  return (valor ?? '').split(/[;,|\s]+/).map(e => e.trim().replace(/^\./, '').toUpperCase()).filter(Boolean).join(', ') || '—';
+}

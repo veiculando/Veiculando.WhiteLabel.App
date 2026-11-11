@@ -1,0 +1,19 @@
+/* VEI-RD-165b: aba Produção. Tabela no desktop, cartões no celular. */
+.production { display: grid; gap: 12px; }
+.production__head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.production__loading { color: #666; }
+.production__total { margin: 0; color: #666; }
+.production__total strong { color: var(--charcoal); font-size: 18px; }
+.production__table { background: var(--white); border-radius: 12px; overflow: hidden; }
+.production__table th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #666; }
+.production__table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.midia { border-radius: 999px; padding: 2px 8px; font-size: 12px; border: 1px solid var(--border); white-space: nowrap; }
+.midia--digital { border-color: var(--charcoal); }
+@media (max-width: 800px) {
+  .production__table thead { display: none; }
+  .production__table, .production__table tbody, .production__table tr, .production__table td { display: block; }
+  .production__table { background: none; }
+  .production__table tr { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; }
+  .production__table td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 4px 0; text-align: right; }
+  .production__table td::before { content: attr(data-label); color: #666; text-align: left; }
+}

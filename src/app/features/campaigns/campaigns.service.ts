@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { AppClients, CampaignDetail, CampaignInput, CampaignSummary } from './campaign.models';
+import { AppClients, CampaignDetail, CampaignInput, CampaignSummary, ProductionFilter, ProductionRow } from './campaign.models';
 
 @Injectable({ providedIn: 'root' })
 export class CampaignsService {
@@ -31,5 +31,17 @@ export class CampaignsService {
 
   update(codigo: string, input: CampaignInput) {
     return this.http.put<{ codigo: string; nome: string }>(`${this.base}/${encodeURIComponent(codigo)}`, input);
+  }
+
+  /** Aba Produção (VEI-RD-165): só peças desta exibidora. */
+  production(codigo: string, filtro: ProductionFilter) {
+    return this.http.get<ProductionRow[]>(`${this.base}/${encodeURIComponent(codigo)}/producao`,
+      { params: new HttpParams().set('filtro', filtro) });
+  }
+
+  /** PDF gerado no BFF; vem como blob porque a chamada leva o token da sessão. */
+  productionPdf(codigo: string, filtro: ProductionFilter) {
+    return this.http.get(`${this.base}/${encodeURIComponent(codigo)}/producao/pdf`,
+      { params: new HttpParams().set('filtro', filtro), responseType: 'blob' });
   }
 }
