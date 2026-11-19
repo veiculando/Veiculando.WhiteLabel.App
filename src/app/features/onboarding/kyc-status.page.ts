@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { finalize, timer } from 'rxjs';
 import { KycStatus } from '../../core/api/app-api.models';
 import { KycService } from '../../core/kyc/kyc.service';
+import { CartService } from '../../core/cart/cart.service';
 
 type StepState = 'done' | 'active' | 'attention' | 'upcoming';
 
@@ -64,7 +65,7 @@ export function kycStepState(status: KycStatus, index: number): StepState {
       }@else if(status()==='approved'){
         <div class="kyc-state-card success" role="status"><h3>Cadastro liberado</h3><p>Seu cadastro foi aprovado. Você já pode criar campanhas e continuar a compra.</p></div>
       }
-      @if(status()==='approved'){<a class="primary" routerLink="/mapa">Explorar inventário</a>}@else if(status()==='adjustments_required'){<a class="primary" routerLink="/tipo-conta">Corrigir dados cadastrais</a><a class="secondary" routerLink="/mapa">Explorar inventário</a>}@else{<a class="secondary" routerLink="/mapa">Explorar inventário</a>}
+      @if(status()==='approved'){@if(cart.count()){<a class="primary" routerLink="/checkout">Continuar compra</a><a class="secondary" routerLink="/mapa">Explorar inventário</a>}@else{<a class="primary" routerLink="/mapa">Explorar inventário</a>}}@else if(status()==='adjustments_required'){<a class="primary" routerLink="/tipo-conta">Corrigir dados cadastrais</a><a class="secondary" routerLink="/mapa">Explorar inventário</a>}@else{<a class="secondary" routerLink="/mapa">Explorar inventário</a>}
     }
   </section>`,
   styleUrls: ['./onboarding.scss'],
@@ -72,6 +73,7 @@ export function kycStepState(status: KycStatus, index: number): StepState {
 })
 export class KycStatusPage {
   private readonly kyc = inject(KycService);
+  readonly cart = inject(CartService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fileInputs = new Map<string, HTMLInputElement>();
   readonly status = signal<KycStatus>('incomplete');
