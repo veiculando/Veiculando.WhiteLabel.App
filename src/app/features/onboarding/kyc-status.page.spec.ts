@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { KycService } from '../../core/kyc/kyc.service';
+import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
+import { CartService } from '../../core/cart/cart.service';
 import { KycStatusPage, kycStepState } from './kyc-status.page';
 
 describe('status do KYC', () => {
@@ -52,6 +54,23 @@ describe('status do KYC', () => {
     expect(fixture.componentInstance.showDocumentForm()).toBe(true);
     expect(fixture.componentInstance.title()).toContain('Envie seus documentos');
     expect([0, 1, 2, 3].map(index => fixture.componentInstance.stepState(index))).toEqual(['active', 'upcoming', 'upcoming', 'upcoming']);
+    fixture.destroy();
+  });
+
+  it('alinha o status da sessão e oferece continuar a compra quando o KYC foi aprovado (VEI-SUP-48)', () => {
+    const syncKycStatus = vi.fn();
+    TestBed.configureTestingModule({
+      imports: [KycStatusPage], providers: [provideRouter([]),
+        { provide: KycService, useValue: { status: () => of({ status: 'approved', updatedAt: new Date().toISOString() }), documents: () => of([]) } },
+        { provide: AdvertiserAuthService, useValue: { syncKycStatus } },
+        { provide: CartService, useValue: { count: () => 1 } }],
+    });
+    const fixture = TestBed.createComponent(KycStatusPage);
+    fixture.detectChanges();
+    expect(syncKycStatus).toHaveBeenCalledWith('approved');
+    const link = fixture.nativeElement.querySelector('a.primary') as HTMLAnchorElement;
+    expect(link.textContent).toContain('Continuar compra');
+    expect(link.getAttribute('href')).toBe('/checkout');
     fixture.destroy();
   });
 });

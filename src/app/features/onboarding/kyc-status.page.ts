@@ -5,6 +5,7 @@ import { finalize, timer } from 'rxjs';
 import { KycStatus } from '../../core/api/app-api.models';
 import { KycService } from '../../core/kyc/kyc.service';
 import { CartService } from '../../core/cart/cart.service';
+import { AdvertiserAuthService } from '../../core/auth/advertiser-auth.service';
 
 type StepState = 'done' | 'active' | 'attention' | 'upcoming';
 
@@ -74,6 +75,7 @@ export function kycStepState(status: KycStatus, index: number): StepState {
 export class KycStatusPage {
   private readonly kyc = inject(KycService);
   readonly cart = inject(CartService);
+  private readonly auth = inject(AdvertiserAuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fileInputs = new Map<string, HTMLInputElement>();
   readonly status = signal<KycStatus>('incomplete');
@@ -107,7 +109,7 @@ export class KycStatusPage {
     this.kyc.status().pipe(finalize(() => { this.refreshing = false; this.loading.set(false); })).subscribe({
       next: ({ status, step, reason }) => {
         if (status !== this.status()) this.uploadMessage.set('');
-        this.status.set(status); this.step.set(step ?? 0); this.reason.set(reason ?? ''); this.loadDocuments();
+        this.status.set(status); this.auth.syncKycStatus(status); this.step.set(step ?? 0); this.reason.set(reason ?? ''); this.loadDocuments();
       },
       error: () => { this.error.set('Não foi possível verificar a análise cadastral.'); },
     });
