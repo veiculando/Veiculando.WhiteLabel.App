@@ -13,6 +13,7 @@ import { InventoryService } from '../../core/inventory/inventory.service';
 import { FotosIndisponiveis } from '../../core/inventory/fotos-indisponiveis';
 import { clampPage, pageCount, pageItems } from '../../core/inventory/pagination';
 import { GoogleMapsLoaderService } from '../../core/maps/google-maps-loader.service';
+import { environment } from '../../../environments/environment';
 
 type FilterPanel = 'campaign' | 'where' | 'when' | 'audience' | 'investment' | null;
 type PoiPlace = { name: string; category: string; latitude: number; longitude: number };
@@ -235,6 +236,8 @@ export class AurumMapPage implements AfterViewInit {
 
   constructor() {
     this.inventory.filters().subscribe({ next: filters => { this.mediaTypes.set(filters.mediaTypes); this.cities.set(filters.cities); this.periods.set(filters.periods); this.ageRanges.set(filters.audience.ageRanges); this.incomeRanges.set(filters.audience.incomeRanges); this.psychographicProfiles.set(filters.audience.psychographicProfiles); this.poiCategories.set(filters.audience.poiCategories ?? []); } });
+    // A sessão guarda o KYC do login; reconsulta para quem foi aprovado depois ou recarregou a página (VEI-SUP-48).
+    if (!environment.usePrototypeFixtures && this.auth.isAuthenticated()) this.auth.loadMe().subscribe({ error: () => undefined });
     effect(() => { if (this.auth.user()?.kycStatus === 'approved') this.loadCampaigns(); });
     this.load();
   }

@@ -70,6 +70,12 @@ export class AdvertiserAuthService {
     return this.http.get<CurrentUser>(`${environment.bffUrl}/app/auth/me`).pipe(tap((user) => this.state.set(user)));
   }
 
+  /** Telas que consultam o KYC direto (ex.: /kyc-status) alinham o status da sessão, que vem do login (VEI-SUP-48). */
+  syncKycStatus(status: KycStatus) {
+    const user = this.state();
+    if (user && user.kycStatus !== status) this.state.set({ ...user, kycStatus: status });
+  }
+
   logout() {
     if (this.loggingOut()) return;
     this.sessionError.set('');
