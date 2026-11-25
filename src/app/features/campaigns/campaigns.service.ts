@@ -23,6 +23,12 @@ export class CampaignsService {
     return this.http.get<CampaignDetail>(`${this.base}/${encodeURIComponent(codigo)}`);
   }
 
+  /** VEI-SUP-60: aprova o pedido confirmado pela exibidora; o BFF gera o PI. */
+  approveOrder(codigo: string, pedido: string) {
+    return this.http.post<{ codigo: string; status: string; pedidosInsercao: string[] }>(
+      `${this.base}/${encodeURIComponent(codigo)}/pedidos/${encodeURIComponent(pedido)}/aprovar`, {});
+  }
+
   /** Criar reaproveita o POST que o mapa já usa (VEI-RD-68e). */
   create(input: CampaignInput, clientId: number | null) {
     return this.http.post<{ id: number; code: string; name: string }>(`${environment.bffUrl}/app/checkout/context/campaigns`,

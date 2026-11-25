@@ -30,6 +30,8 @@ export interface CampaignOrderRow {
   periodo: { codigo: string; dataInicio: string; dataFim: string };
   status: string;
   simulacao: boolean;
+  /** VEI-SUP-60: a exibidora confirmou e falta a agência aprovar (gera o PI). */
+  podeAprovar?: boolean;
   pecas: number;
   valor: number;
 }

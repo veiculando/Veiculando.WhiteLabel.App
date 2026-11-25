@@ -1,6 +1,7 @@
 .campaigns, .detail { padding: 24px; color: var(--charcoal); }
 .campaigns__bar, .advertiser, .detail__head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
 .campaigns__error, .field small, .field-error { color: var(--danger); }
+.campaigns__ok { color: var(--success); }
 .empty { color: #666; padding: 24px 0; }
 .badge { border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-size: 12px; }
 .badge--em_exibicao { border-color: var(--success); color: var(--success); }

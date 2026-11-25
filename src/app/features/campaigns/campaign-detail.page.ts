@@ -65,6 +65,8 @@ export function agruparPedidos(rows: CampaignOrderRow[]) {
         </nav>
         @switch (tab()) {
           @case ('Pedidos') {
+            @if (aviso()) { <p class="campaigns__ok" role="status">{{ aviso() }}</p> }
+            @if (erroAprovar()) { <p class="campaigns__error" role="alert">{{ erroAprovar() }}</p> }
             @for (estado of grupos(); track estado.estado) {
               <details open>
                 <summary>{{ estado.estado }}</summary>
@@ -81,7 +83,14 @@ export function agruparPedidos(rows: CampaignOrderRow[]) {
                             <td>{{ row.status }}</td>
                             <td>{{ row.pecas | number:'1.0-0':'pt-BR' }}</td>
                             <td>{{ row.valor | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
-                            <td>@if (row.simulacao) { <button type="button" disabled>Excluir simulação</button> }</td>
+                            <td>
+                              @if (row.podeAprovar) {
+                                <button type="button" class="primary" [disabled]="aprovando() === row.codigo" (click)="aprovar(item.codigo, row.codigo)">
+                                  {{ aprovando() === row.codigo ? 'Aprovando…' : 'Aprovar pedido' }}
+                                </button>
+                              }
+                              @if (row.simulacao) { <button type="button" disabled>Excluir simulação</button> }
+                            </td>
                           </tr>
                         }
                       </tbody>
@@ -117,6 +126,9 @@ export class CampaignDetailPage {
   readonly notFound = signal(false);
   readonly error = signal('');
   readonly editOpen = signal(false);
+  readonly aprovando = signal<string | null>(null);
+  readonly aviso = signal('');
+  readonly erroAprovar = signal('');
   readonly tab = signal('Pedidos');
   readonly tabs = ['Pedidos', 'Arte Final', 'Produção', 'Checking', 'Financeiro'];
   readonly label = (status: CampaignStatus) => CAMPAIGN_STATUS_LABEL[status] ?? status;
@@ -130,6 +142,25 @@ export class CampaignDetailPage {
   ];
 
   constructor() { this.carregar(); }
+
+  /** VEI-SUP-60: aprovar gera o pedido de inserção para a exibidora. */
+  aprovar(campanha: string, pedido: string) {
+    if (!confirm(`Aprovar o pedido ${pedido}? A exibidora recebe o pedido de inserção.`)) return;
+    this.aprovando.set(pedido);
+    this.aviso.set('');
+    this.erroAprovar.set('');
+    this.api.approveOrder(campanha, pedido).subscribe({
+      next: () => {
+        this.aprovando.set(null);
+        this.aviso.set(`Pedido ${pedido} aprovado. A exibidora já recebeu o pedido de inserção.`);
+        this.carregar();
+      },
+      error: err => {
+        this.aprovando.set(null);
+        this.erroAprovar.set(mensagensDoServidor(err, 'Não foi possível aprovar o pedido.')[0]);
+      },
+    });
+  }
 
   carregar() {
     this.loading.set(true);
