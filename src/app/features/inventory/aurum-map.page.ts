@@ -1,6 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, effect, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { CarteiraService } from '../../core/carteira/carteira.service';
 import { finalize } from 'rxjs';
 import { CheckoutCampaign, InventoryPoint } from '../../core/api/app-api.models';
@@ -51,7 +51,7 @@ export function recommendationList(points: InventoryPoint[], onlyRecommended: bo
 }
 
 @Component({
-  imports: [CurrencyPipe, RouterLink],
+  imports: [CurrencyPipe, RouterLink, RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="aurum-map">
@@ -142,6 +142,8 @@ export function recommendationList(points: InventoryPoint[], onlyRecommended: bo
         <aside class="filter-drawer" aria-label="Mais filtros" role="dialog" aria-modal="true"><header><h2>Mais filtros</h2><button type="button" aria-label="Fechar filtros" (click)="filtersOpen.set(false)">×</button></header><div class="filter-drawer__body"><h3>Tipos de suporte</h3>@for(type of mediaTypes();track type){<label><input type="checkbox" [checked]="selectedMediaTypes().includes(type)" (change)="toggleMedia(type)" />{{type}}</label>}@if(!mediaTypes().length){<p>Os tipos serão exibidos após carregar o inventário.</p>}<hr/><h3>Próximos de (POI)</h3><label for="map-poi-query">Procurar nesta área por</label><input id="map-poi-query" type="search" [value]="poiQuery()" (input)="poiQuery.set($any($event.target).value)" placeholder="Ex.: hospital, aeroporto" />@for(category of poiCategories();track category.id){<label><input type="checkbox" [checked]="poiCategoryIds().includes(category.id)" (change)="togglePoiCategory(category.id)" />{{category.name}}</label>}@if(!poiCategories().length){<p>Não há categorias de interesse cadastradas.</p>}<p>Os locais encontrados serão destacados no mapa. Exibiremos peças até 5 km deles.</p></div><footer><button type="button" (click)="selectedMediaTypes.set([]); poiCategoryIds.set([]); poiQuery.set(''); filtersOpen.set(false); load()">Limpar</button><button type="button" (click)="filtersOpen.set(false); load()">Refinar</button></footer></aside>
       }
     </div>
+    <!-- VEI-SUP-62: checkout por cima do mapa -->
+    <router-outlet />
   `,
 })
 export class AurumMapPage implements AfterViewInit {

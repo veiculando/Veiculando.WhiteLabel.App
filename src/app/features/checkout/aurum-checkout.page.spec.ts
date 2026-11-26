@@ -22,8 +22,8 @@ function setup(meStatus: 'approved' | 'pending', campaigns: unknown[] = [], opts
     imports: [AurumCheckoutPage],
     providers: [provideRouter([]),
       { provide: AdvertiserAuthService, useValue: { user, loadMe, isAuthenticated: signal(true), logout: vi.fn() } },
-      { provide: CheckoutService, useValue: { context, createCampaign, quote: vi.fn(() => opts.quoteFails ? throwError(() => opts.quoteFails) : of(null)), placeOrder: vi.fn() } },
-      { provide: CartService, useValue: { count: () => 1, items: () => [{ id: 1, code: 'UBAAUR1', name: 'Rua Conceição', address: 'Rua Conceição, 886', city: 'Ubatuba', state: 'SP', price: 600, mediaType: 'Outdoor Standard' }], subtotal: () => 600 } }],
+      { provide: CheckoutService, useValue: { context, createCampaign, quote: vi.fn(() => opts.quoteFails ? throwError(() => opts.quoteFails) : of(null)), placeOrder: vi.fn(), saveSimulation: vi.fn(() => of({ orderCode: 'PED-1', total: 600, createdAt: '', simulation: true })) } },
+      { provide: CartService, useValue: { count: () => 1, items: () => [{ id: 1, code: 'UBAAUR1', name: 'Rua Conceição', address: 'Rua Conceição, 886', city: 'Ubatuba', state: 'SP', price: 600, mediaType: 'Outdoor Standard' }], subtotal: () => 600, clear: vi.fn() } }],
   });
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(AurumCheckoutPage);
@@ -90,5 +90,28 @@ describe('checkout com KYC aprovado depois do login', () => {
       { quoteFails: { status: 409, error: { message: 'Uma ou mais peças já estão indisponíveis neste período.' } } });
     page.getQuote();
     expect(page.error()).toBe('Uma ou mais peças já estão indisponíveis neste período.');
+  });
+});
+
+// VEI-SUP-62: "Salvar simulação" ficava sempre desabilitado.
+describe('salvar simulação no checkout', () => {
+  const campanha = { id: 5, code: 'C5', name: 'UMC 2027', periods: [{ codigo: 'P1', nome: 'Bissemana 1', dataInicio: '', dataFim: '' }, { codigo: 'P2', nome: 'Bissemana 2', dataInicio: '', dataFim: '' }] };
+
+  it('fica desabilitado sem período e habilita sem exigir o aceite dos termos', () => {
+    const { page } = setup('approved', [campanha]);
+    expect(page.campaignId()).toBe(5);
+    expect(page.canSaveSimulation()).toBe(false);
+    page.selectPeriod('P1');
+    expect(page.accepted()).toBe(false);
+    expect(page.canSaveSimulation()).toBe(true);
+  });
+
+  it('envia campanha, período e peças e abre a confirmação da simulação', () => {
+    const { page, navigate } = setup('approved', [campanha]);
+    page.selectPeriod('P2');
+    page.saveSimulation();
+    const checkout = TestBed.inject(CheckoutService) as unknown as { saveSimulation: ReturnType<typeof vi.fn> };
+    expect(checkout.saveSimulation).toHaveBeenCalledWith(expect.any(Array), 5, 'P2');
+    expect(navigate).toHaveBeenCalledWith(['/pedidos/sucesso'], { state: { order: expect.objectContaining({ simulation: true }) } });
   });
 });

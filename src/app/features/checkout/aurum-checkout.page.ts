@@ -41,7 +41,7 @@ import { environment } from '../../../environments/environment';
           <footer class="checkout-drawer__footer"><p class="checkout-warning">* Você não está realizando uma solicitação de reserva. Ao clicar em “Fechar Pedido” você realiza uma solicitação de compra.</p><label class="checkout-terms"><input type="checkbox" [checked]="accepted()" (change)="accepted.set($any($event.target).checked)" /><span>Li e aceito os Termos de uso, a política de cancelamento e as condições comerciais da exibidora.</span></label><div class="checkout-total"><span>Total geral</span><strong>{{(quote()?.total ?? cart.subtotal()) | currency:'BRL':'symbol':'1.0-0':'pt-BR'}}</strong></div>
             @if(error()){<p class="checkout-error" role="alert">{{error()}}</p>}
             @if(quote()){<p class="checkout-quote-ok" role="status">Cotação confirmada. Confira o total e aceite as condições antes de enviar.</p>}
-            <div class="checkout-actions"><button type="button" disabled title="Salvar simulação depende do BFF">Salvar simulação</button>@if(!quote()){<button type="button" (click)="getQuote()" [disabled]="loading()">{{loading()?'Consultando…':!auth.user()&&!prototype?'Entrar para consultar':'Conferir cotação'}}</button>}@else{<button type="button" (click)="placeOrder()" [disabled]="loading()||!accepted()||!canSubmit()">{{loading()?'Enviando…':'Fechar pedido'}}</button>}</div>
+            <div class="checkout-actions"><button type="button" (click)="saveSimulation()" [disabled]="!canSaveSimulation()" [title]="canSaveSimulation()?'Salva o carrinho na campanha sem solicitar compra':'Selecione a campanha e o período para salvar a simulação'">{{savingSimulation()?'Salvando…':'Salvar simulação'}}</button>@if(!quote()){<button type="button" (click)="getQuote()" [disabled]="loading()">{{loading()?'Consultando…':!auth.user()&&!prototype?'Entrar para consultar':'Conferir cotação'}}</button>}@else{<button type="button" (click)="placeOrder()" [disabled]="loading()||!accepted()||!canSubmit()">{{loading()?'Enviando…':'Fechar pedido'}}</button>}</div>
             @if(quote()&&!canSubmit()&&!prototype){<p class="checkout-blocked">Seu cadastro precisa estar aprovado para enviar o pedido.</p>}
           </footer>
         }
@@ -64,6 +64,9 @@ export class AurumCheckoutPage {
   readonly periods=computed(()=>this.context()?.campaigns.find(c=>c.id===this.campaignId())?.periods??[]);
   readonly selectedPeriod=computed(()=>this.periods().find(p=>p.codigo===this.periodCode()));
   readonly loading=signal(false);
+  readonly savingSimulation=signal(false);
+  /** VEI-SUP-62: simulação não é compra, então não depende do aceite dos termos. */
+  readonly canSaveSimulation=computed(()=>!!this.campaignId()&&!!this.selectedPeriod()&&this.cart.count()>0&&!this.loading()&&!this.savingSimulation()&&this.canSubmit());
   readonly accepted=signal(false);
   readonly error=signal('');
   readonly contextFailed=signal(false);
@@ -131,6 +134,12 @@ export class AurumCheckoutPage {
     const ids=this.cart.items().map(item=>item.id).join(',');
     this.quote.set(null);this.accepted.set(false);this.loading.set(true);this.error.set('');
     this.checkout.quote(this.cart.items(),campaignId,periodCode).pipe(finalize(()=>this.loading.set(false))).subscribe({next:quote=>{if(ids===this.cart.items().map(item=>item.id).join(',')&&campaignId===this.campaignId()&&periodCode===this.periodCode()){this.idempotencyKey=crypto.randomUUID();this.quote.set(quote);}},error:(e:{error?:{message?:string}})=>this.error.set(e?.error?.message||'Não foi possível confirmar preço e disponibilidade. Tente novamente.')});
+  }
+  saveSimulation(){
+    const campaignId=this.campaignId();const periodCode=this.periodCode();
+    if(!this.canSaveSimulation()||!campaignId||!periodCode)return;
+    this.savingSimulation.set(true);this.error.set('');
+    this.checkout.saveSimulation(this.cart.items(),campaignId,periodCode).pipe(finalize(()=>this.savingSimulation.set(false))).subscribe({next:(order:OrderConfirmation)=>{this.cart.clear();void this.router.navigate(['/pedidos/sucesso'],{state:{order}});},error:(e:{error?:{message?:string}})=>this.error.set(e?.error?.message||'Não foi possível salvar a simulação. Tente novamente.')});
   }
   placeOrder(){
     const quote=this.quote();if(!quote||!this.accepted()||!this.canSubmit()||this.loading()||!this.cart.count())return;
