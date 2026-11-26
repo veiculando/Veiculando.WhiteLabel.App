@@ -44,6 +44,28 @@ export class CheckoutService {
     return this.http.post<CheckoutQuote>(`${environment.bffUrl}/app/checkout/quote`, { pieceIds: items.map((item) => item.id), campaignId, periodCode });
   }
 
+  /** VEI-SUP-62: grava o carrinho como pedido em simulação (sem reservar as peças). */
+  saveSimulation(items: InventoryPoint[], campaignId: number, periodCode: string): Observable<OrderConfirmation> {
+    if (environment.usePrototypeFixtures) {
+      return of<OrderConfirmation>({
+        orderCode: `SIM-PREVIEW-${String(Date.now()).slice(-5)}`,
+        total: items.reduce((sum, item) => sum + item.price, 0),
+        createdAt: new Date().toISOString(),
+        prototype: true,
+        simulation: true,
+      }).pipe(delay(250));
+    }
+    return this.http.post<{ orders: Array<{ code: string }>; total: number }>(`${environment.bffUrl}/app/checkout/simulations`, {
+      pieceIds: items.map((item) => item.id), campaignId, periodCode,
+    }).pipe(map((receipt) => ({
+      orderCode: receipt.orders.map((order) => order.code).join(', '),
+      orderCodes: receipt.orders.map((order) => order.code),
+      total: receipt.total,
+      createdAt: new Date().toISOString(),
+      simulation: true,
+    })));
+  }
+
   placeOrder(quote: CheckoutQuote, idempotencyKey: string): Observable<OrderConfirmation> {
     if (environment.usePrototypeFixtures) {
       return of<OrderConfirmation>({

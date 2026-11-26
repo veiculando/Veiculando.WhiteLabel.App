@@ -26,9 +26,7 @@ export const routes: Routes = [
     // Explorar, selecionar e revisar o carrinho são públicos. A autenticação
     // só é exigida quando o usuário pede cotação ou finaliza a compra.
     path: '', component: AppShellComponent, children: [
-      { path: 'mapa', loadComponent: () => import('./features/inventory/aurum-map.page').then(m => m.AurumMapPage) },
       { path: 'pecas/:codigo', loadComponent: () => import('./features/inventory/aurum-piece.page').then(m => m.AurumPiecePage) },
-      { path: 'checkout', loadComponent: () => import('./features/checkout/aurum-checkout.page').then(m => m.AurumCheckoutPage) },
       // VEI-RD-157e: carteira da vendedora na Prospecção; o BFF recusa fora dela.
       { path: 'meus-clientes', loadComponent: () => import('./features/carteira/meus-clientes.page').then(m => m.MeusClientesPage) },
       { path: 'pedidos/sucesso', loadComponent: () => import('./features/checkout/aurum-success.page').then(m => m.AurumSuccessPage) },
@@ -36,6 +34,12 @@ export const routes: Routes = [
       { path: 'anunciante/clientes/novo', canActivate: [authGuard], loadComponent: () => import('./features/anunciantes/adicionar-anunciante.page').then(m => m.AdicionarAnunciantePage) },
       { path: 'anunciante/clientes', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/clients-gateway.page').then(m => m.ClientsGatewayPage) },
       { path: 'anunciante/campanhas', canActivate: [authGuard, minhasCampanhasGuard], runGuardsAndResolvers: 'paramsOrQueryParamsChange', loadComponent: () => import('./features/campaigns/campaigns.page').then(m => m.CampaignsPage) },
+      // VEI-SUP-62: o checkout abre por cima do mapa, como o carrinho. Mapa e checkout
+      // compartilham o mesmo componente pai, então o mapa não é recriado ao alternar.
+      { path: '', loadComponent: () => import('./features/inventory/aurum-map.page').then(m => m.AurumMapPage), children: [
+        { path: 'mapa', children: [] },
+        { path: 'checkout', loadComponent: () => import('./features/checkout/aurum-checkout.page').then(m => m.AurumCheckoutPage) },
+      ] },
       { path: 'anunciante/campanhas/campanha/:codigo', canActivate: [authGuard], loadComponent: () => import('./features/campaigns/campaign-detail.page').then(m => m.CampaignDetailPage) },
     ],
   },

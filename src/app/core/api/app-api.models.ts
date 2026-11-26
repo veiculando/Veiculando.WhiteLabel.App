@@ -99,4 +99,6 @@ export interface OrderConfirmation {
   total: number;
   createdAt: string;
   prototype?: boolean;
+  /** Salvo como simulação (VEI-SUP-62): não é solicitação de compra. */
+  simulation?: boolean;
 }
